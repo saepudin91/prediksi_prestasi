@@ -122,5 +122,29 @@ if not df_riwayat.empty and "Jenis Bullying" in df_riwayat.columns:
     ax.set_ylabel("Jumlah Kasus")
     ax.tick_params(axis="x", labelrotation=30)
     st.pyplot(fig)
+
+# Simpan grafik ke dalam buffer sebagai PNG
+    img_buffer = BytesIO()
+    fig.savefig(img_buffer, format="png", bbox_inches="tight")
+    img_buffer.seek(0)
+
+    # Tombol Download Grafik
+    st.download_button(
+        label="📥 Download Grafik",
+        data=img_buffer,
+        file_name="grafik_bullying.png",
+        mime="image/png"
+    )
+
+    # Tampilkan informasi bullying terbanyak dan tersedikit
+    if not bullying_counts.empty:
+        st.write(f"📌 Jenis bullying yang paling banyak terjadi: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
+        st.write(f"📌 Jenis bullying yang paling sedikit terjadi: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
+
 else:
     st.write("⚠ Tidak ada data bullying untuk dianalisis.")
+
+# --- 4. DOWNLOAD RIWAYAT ---
+if not df_riwayat.empty:
+    csv = df_riwayat.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
