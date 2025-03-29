@@ -31,7 +31,7 @@ with open(model_path, "rb") as f:
     model = pickle.load(f)
 
 # --- FITUR LOGIN ---
-USER_CREDENTIALS = {"user2": "password123", "admin": "adminpass"}
+USER_CREDENTIALS = {"user3": "password123", "admin": "adminpass"}
 
 def login():
     st.title("🔒 Login ke Aplikasi")
@@ -77,7 +77,7 @@ if mode == "Input Manual":
             st.success(f"Hasil prediksi prestasi belajar {nama}: {hasil_prediksi:.2f}")
             new_row = [len(sheet.get_all_values()), nama, jenis_kelamin, umur, kelas, bullying, sosial, mental, jenis_bullying, hasil_prediksi]
             sheet.append_row(new_row)
-            st.info("Data telah disimpan Database!")
+            st.info("Data telah disimpan ke Database!")
 
 # --- UPLOAD CSV ---
 elif mode == "Upload CSV":
@@ -91,7 +91,7 @@ elif mode == "Upload CSV":
             df_siswa["Prediksi Prestasi"] = model.predict(df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]])
             for _, row in df_siswa.iterrows():
                 sheet.append_row(row.tolist())
-            st.success("Data berhasil diproses dan disimpan di Google Sheets!")
+            st.success("Data berhasil diproses dan disimpan Ke Database!")
             st.dataframe(df_siswa)
 
 # --- 3. TAMPILKAN & HAPUS RIWAYAT ---
