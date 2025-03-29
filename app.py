@@ -77,7 +77,7 @@ if mode == "Input Manual":
             st.success(f"Hasil prediksi prestasi belajar {nama}: {hasil_prediksi:.2f}")
             new_row = [len(sheet.get_all_values()), nama, jenis_kelamin, umur, kelas, bullying, sosial, mental, jenis_bullying, hasil_prediksi]
             sheet.append_row(new_row)
-            st.info("Data telah disimpan di Google Sheets!")
+            st.info("Data telah disimpan Database!")
 
 # --- UPLOAD CSV ---
 elif mode == "Upload CSV":
