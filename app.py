@@ -108,6 +108,20 @@ if len(data) > 1:
         sheet.append_row(HEADER)
         st.warning("Seluruh riwayat prediksi telah dihapus!")
         st.rerun()
+# Hapus Data Tertentu
+    if len(df_riwayat) > 0:
+        nama_hapus = st.selectbox("Pilih Nama yang Akan Dihapus", df_riwayat["Nama"].unique())
+        if st.button("Hapus Data Ini"):
+            df_riwayat = df_riwayat[df_riwayat["Nama"] != nama_hapus]
+
+            # Simpan ulang data ke Google Sheets setelah penghapusan
+            sheet.clear()
+            sheet.append_row(HEADER)
+            for i, row in df_riwayat.iterrows():
+                sheet.append_row(row.tolist())
+
+            st.warning(f"Data untuk {nama_hapus} telah dihapus!")
+            st.rerun()
 else:
     st.write("Belum ada riwayat prediksi.")
 
