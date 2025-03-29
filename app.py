@@ -16,7 +16,7 @@ client = gspread.authorize(creds)
 
 # Coba buka spreadsheet
 try:
-    spreadsheet = client.open("NAMA_SPREADSHEET")
+    spreadsheet = client.open("Prediksi prestasi")
     st.write(f"✅ Berhasil terhubung ke: {spreadsheet.title}")
 
     # Coba ambil worksheet pertama
