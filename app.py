@@ -50,7 +50,7 @@ def login():
             st.session_state["authenticated"] = True
             st.session_state["username"] = username
             st.success(f"✅ Login berhasil! Selamat datang, {username}.")
-            st.rerun()  # Refresh halaman setelah login
+          #  st.rerun()  # Refresh halaman setelah login
         else:
             st.error("❌ Username atau password salah!")
 
@@ -59,7 +59,7 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 # Jika belum login, tampilkan halaman login
-if not st.session_state["authenticated"]:
+# if not st.session_state["authenticated"]:
     login()
     st.stop()  # Hentikan eksekusi aplikasi utama jika belum login
 
