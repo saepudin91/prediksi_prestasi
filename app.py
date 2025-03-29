@@ -59,7 +59,7 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 # Jika belum login, tampilkan halaman login
- if not st.session_state["authenticated"]:
+if not st.session_state["authenticated"]:
     login()
     st.stop()  # Hentikan eksekusi aplikasi utama jika belum login
 
@@ -135,8 +135,9 @@ elif mode == "Upload CSV":
 st.subheader("Riwayat Prediksi")
 data = sheet.get_all_values()
 if len(data) > 1:
-    df_riwayat = pd.DataFrame(data[1:], columns=HEADER)  
-    st.dataframe(df_riwayat)
+    df_riwayat = pd.DataFrame(data[1:], columns=HEADER)
+else:
+    df_riwayat = pd.DataFrame(columns=HEADER)  # Membuat DataFrame kosong jika tidak ada data
     if st.button("Hapus Semua Riwayat"):
         sheet.clear()
         sheet.append_row(HEADER)
