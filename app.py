@@ -94,18 +94,43 @@ elif mode == "Upload CSV":
             st.success("Data berhasil diproses dan disimpan di Google Sheets!")
             st.dataframe(df_siswa)
 
-# --- RIWAYAT ---
-st.subheader("📜 Riwayat Prediksi")
+# --- 3. TAMPILKAN & HAPUS RIWAYAT ---
+st.subheader("Riwayat Prediksi")
+
+# Ambil data terbaru dari Google Sheets
 data = sheet.get_all_values()
-df_riwayat = pd.DataFrame(data[1:], columns=HEADER) if len(data) > 1 else pd.DataFrame(columns=HEADER)
+
+if len(data) > 1:
+    df_riwayat = pd.DataFrame(data[1:], columns=HEADER)  
+else:
+    df_riwayat = pd.DataFrame(columns=HEADER)
 
 if not df_riwayat.empty:
     st.dataframe(df_riwayat)
+
+    # Hapus Seluruh Riwayat
     if st.button("Hapus Semua Riwayat"):
         sheet.clear()
         sheet.append_row(HEADER)
-        st.warning("Riwayat telah dihapus!")
+        st.warning("Seluruh riwayat prediksi telah dihapus!")
         st.rerun()
+
+    # Hapus Data Tertentu
+    if len(df_riwayat) > 0:
+        nama_hapus = st.selectbox("Pilih Nama yang Akan Dihapus", df_riwayat["Nama"].unique())
+        if st.button("Hapus Data Ini"):
+            df_riwayat = df_riwayat[df_riwayat["Nama"] != nama_hapus]
+
+            # Simpan ulang data ke Google Sheets setelah penghapusan
+            sheet.clear()
+            sheet.append_row(HEADER)
+            for i, row in df_riwayat.iterrows():
+                sheet.append_row(row.tolist())
+
+            st.warning(f"Data untuk {nama_hapus} telah dihapus!")
+            st.rerun()
+   else:
+        st.write("Belum ada riwayat prediksi.")
 
 # --- ANALISIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
