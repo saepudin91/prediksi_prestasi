@@ -157,8 +157,8 @@ else:
 
             st.warning(f"Data untuk {nama_hapus} telah dihapus!")
             st.rerun()
-else:
-    st.write("Belum ada riwayat prediksi.")
+    else:
+         st.write("Belum ada riwayat prediksi.")
 
 # --- ANALISIS JENIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
