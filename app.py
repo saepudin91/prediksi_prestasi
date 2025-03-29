@@ -6,9 +6,9 @@ from io import BytesIO
 import gspread
 from google.oauth2.service_account import Credentials
 
-# --- KONFIGURASI GOOGLE SHEETS ---
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = Credentials.from_service_account_file("D:/prediksi/prediksiprestasi-109c874757d5.json", scopes=scope)
+# --- KONFIGURASI GOOGLE SHEETS DENGAN STREAMLIT SECRETS ---
+secrets = st.secrets["google_sheets"]
+creds = Credentials.from_service_account_info(secrets)
 client = gspread.authorize(creds)
 
 # Nama spreadsheet
@@ -23,8 +23,9 @@ HEADER = ["No", "Nama", "Jenis Kelamin", "Umur", "Kelas",
 if not sheet.row_values(1):  # Jika kosong, tambahkan header
     sheet.append_row(HEADER)
 
-# Load model regresi
-with open("D:/prediksi/model_regresi.pkl", "rb") as f:
+# Load model dari file yang diunggah ke GitHub
+model_path = "model_regresi.pkl"  # Pastikan file ini ada di GitHub dan Streamlit
+with open(model_path, "rb") as f:
     model = pickle.load(f)
 
 st.title("Aplikasi Prediksi Prestasi Belajar")
