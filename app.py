@@ -11,6 +11,8 @@ secrets = st.secrets["google_sheets"]
 creds = Credentials.from_service_account_info(secrets)
 client = gspread.authorize(creds)
 
+st.write(st.secrets["google_sheets"])
+
 # Nama spreadsheet
 SPREADSHEET_NAME = "Prediksi prestasi"
 sheet = client.open(SPREADSHEET_NAME).sheet1
