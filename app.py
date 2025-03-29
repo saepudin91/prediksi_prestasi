@@ -50,7 +50,7 @@ def login():
             st.session_state["authenticated"] = True
             st.session_state["username"] = username
             st.success(f"✅ Login berhasil! Selamat datang, {username}.")
-            st.experimental_rerun()  # Refresh halaman setelah login
+            st.rerun()  # Refresh halaman setelah login
         else:
             st.error("❌ Username atau password salah!")
 
