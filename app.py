@@ -44,8 +44,7 @@ def login():
     st.title("🔒 Login ke Aplikasi")
 
     username = st.text_input("Username", value="")
-    password = st.text_input("Password", type="password", value="", key="password", type="password")
-
+    password = st.text_input("Password", type="password", key="password")
     if st.button("Login"):
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.session_state["authenticated"] = True
