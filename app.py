@@ -134,8 +134,17 @@ if not df_riwayat.empty:
 
 # --- ANALISIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
-if "Jenis Bullying" in df_riwayat.columns:
+# Ambil data terbaru dari Google Sheets
+data = sheet.get_all_values()
+
+if len(data) > 1:
+    df_riwayat = pd.DataFrame(data[1:], columns=HEADER)  
+else:
+    df_riwayat = pd.DataFrame(columns=HEADER)
+
+if not df_riwayat.empty and "Jenis Bullying" in df_riwayat.columns:
     bullying_counts = df_riwayat["Jenis Bullying"].value_counts()
+
     fig, ax = plt.subplots(figsize=(8, 6))
     bullying_counts.plot(kind="bar", ax=ax, color=['blue', 'red', 'green', 'purple', 'orange'])
     ax.set_title("Jumlah Kasus Berdasarkan Jenis Bullying")
