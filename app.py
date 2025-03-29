@@ -109,21 +109,36 @@ if not df_riwayat.empty:
 
 # --- ANALISIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
-if "Jenis Bullying" in df_riwayat.columns:
+
+if "df_riwayat" in locals() and not df_riwayat.empty and "Jenis Bullying" in df_riwayat.columns:
     bullying_counts = df_riwayat["Jenis Bullying"].value_counts()
     fig, ax = plt.subplots(figsize=(8, 6))
     bullying_counts.plot(kind="bar", ax=ax, color=['blue', 'red', 'green', 'purple', 'orange'])
     ax.set_title("Jumlah Kasus Berdasarkan Jenis Bullying")
     ax.set_xlabel("Jenis Bullying")
     ax.set_ylabel("Jumlah Kasus")
+    ax.tick_params(axis="x", labelrotation=30)
     st.pyplot(fig)
-    
+
+    # Simpan grafik ke dalam buffer sebagai PNG
     img_buffer = BytesIO()
     fig.savefig(img_buffer, format="png", bbox_inches="tight")
     img_buffer.seek(0)
-    st.download_button("📥 Download Grafik", data=img_buffer, file_name="grafik_bullying.png", mime="image/png")
+
+    # Tombol Download Grafik
+    st.download_button(
+        label="📥 Download Grafik",
+        data=img_buffer,
+        file_name="grafik_bullying.png",
+        mime="image/png"
+    )
+
+    # Tampilkan informasi bullying terbanyak dan tersedikit
+    if not bullying_counts.empty:
+        st.write(f"📌 Jenis bullying yang paling banyak terjadi: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
+        st.write(f"📌 Jenis bullying yang paling sedikit terjadi: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
 else:
-    st.write("⚠ Tidak ada data untuk dianalisis.")
+    st.write("⚠ Tidak ada data bullying untuk dianalisis.")
 
 # --- DOWNLOAD RIWAYAT ---
 if not df_riwayat.empty:
