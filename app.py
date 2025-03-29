@@ -129,8 +129,8 @@ if not df_riwayat.empty:
 
             st.warning(f"Data untuk {nama_hapus} telah dihapus!")
             st.rerun()
-        else:
-             st.write("Belum ada riwayat prediksi.")
+else:
+     st.write("Belum ada riwayat prediksi.")
 
 # --- ANALISIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
