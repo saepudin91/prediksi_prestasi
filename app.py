@@ -17,6 +17,15 @@ client = gspread.authorize(creds)
 # Coba buka spreadsheet
 try:
     spreadsheet = client.open("NAMA_SPREADSHEET")
-    st.write(f"Berhasil terhubung ke: {spreadsheet.title}")
+    st.write(f"✅ Berhasil terhubung ke: {spreadsheet.title}")
+
+    # Coba ambil worksheet pertama
+    worksheet = spreadsheet.get_worksheet(0)
+    data = worksheet.get_all_values()
+    
+    # Tampilkan beberapa baris pertama sebagai debug
+    st.write("🔹 Data dari Google Sheets:")
+    st.write(data[:5])  # Hanya tampilkan 5 baris pertama
+
 except Exception as e:
-    st.error(f"Error: {e}")
+    st.error(f"❌ Error: {e}")
