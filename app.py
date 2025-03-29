@@ -64,7 +64,7 @@ if not st.session_state["authenticated"]:
     st.stop()  # Hentikan eksekusi aplikasi utama jika belum login
 
 # --- APLIKASI UTAMA ---
-st.title("Aplikasi Prediksi Prestasi Belajar")
+
 st.write("Selamat datang di aplikasi!")
 st.title("Aplikasi Prediksi Prestasi Belajar")
 
