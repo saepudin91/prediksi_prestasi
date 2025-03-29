@@ -147,8 +147,13 @@ if "Jenis Bullying" in df_riwayat.columns:
     fig.savefig(img_buffer, format="png", bbox_inches="tight")
     img_buffer.seek(0)
     st.download_button("📥 Download Grafik", data=img_buffer, file_name="grafik_bullying.png", mime="image/png")
+    
+# Tampilkan informasi bullying terbanyak dan tersedikit
+    if not bullying_counts.empty:
+        st.write(f"📌 Jenis bullying yang paling banyak terjadi: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
+        st.write(f"📌 Jenis bullying yang paling sedikit terjadi: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
 else:
-    st.write("⚠ Tidak ada data untuk dianalisis.")
+    st.write("⚠ Tidak ada data bullying untuk dianalisis.")
 
 # --- DOWNLOAD RIWAYAT ---
 if not df_riwayat.empty:
