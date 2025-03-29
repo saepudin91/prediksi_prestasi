@@ -31,6 +31,37 @@ model_path = "model_regresi.pkl"
 with open(model_path, "rb") as f:
     model = pickle.load(f)
 
+# --- FITUR LOGIN ---
+USER_CREDENTIALS = {
+    "user1": "password123",
+    "admin": "adminpass"
+}
+
+def login():
+    """Halaman login"""
+    st.title("🔒 Login ke Aplikasi")
+
+    username = st.text_input("Username", value="")
+    password = st.text_input("Password", type="password", value="")
+
+    if st.button("Login"):
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+            st.session_state["authenticated"] = True
+            st.session_state["username"] = username
+            st.success(f"✅ Login berhasil! Selamat datang, {username}.")
+            st.experimental_rerun()
+        else:
+            st.error("❌ Username atau password salah!")
+
+# Cek status login
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if not st.session_state["authenticated"]:
+    login()
+    st.stop()  # Menghentikan eksekusi hingga login berhasil
+
+
 st.title("Aplikasi Prediksi Prestasi Belajar")
 
 # --- MODE INPUT MANUAL ---
