@@ -8,3 +8,4 @@ google-auth
 google-auth-oauthlib
 google-auth-httplib2
 google-auth-oauthlib
+from google.oauth2.service_account import Credentials
