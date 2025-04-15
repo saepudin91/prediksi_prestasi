@@ -116,6 +116,9 @@ data = sheet.get_all_values()
 df_riwayat = pd.DataFrame(data[1:], columns=HEADER) if len(data) > 1 else pd.DataFrame(columns=HEADER)
 
 if not df_riwayat.empty:
+    df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
+    df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
+
     st.dataframe(df_riwayat)
 
     if st.button("Hapus Semua Riwayat"):
@@ -169,27 +172,6 @@ if not df_riwayat.empty:
 else:
     st.write("⚠ Tidak ada data bullying untuk dianalisis.")
 
-# --- DOWNLOAD RIWAYAT ---
-if not df_riwayat.empty:
-    csv = df_riwayat.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
-
-# --- KATEGORISASI PRESTASI ---
-if not df_riwayat.empty:
-    df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
-    
-    def kategorikan(nilai):
-        if pd.isna(nilai):
-            return ""
-        elif nilai < 2.5:
-            return "Rendah"
-        elif nilai < 3.5:
-            return "Cukup"
-        else:
-            return "Tinggi"
-
-    df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(kategorikan)
-    
 # --- PIE CHART KATEGORI PRESTASI ---
 st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar")
 if not df_riwayat.empty:
@@ -207,3 +189,8 @@ if not df_riwayat.empty:
     st.download_button("📥 Download Pie Chart", data=img_pie, file_name="pie_kategori_prestasi.png", mime="image/png")
 else:
     st.info("Belum ada data kategori prestasi untuk ditampilkan.")
+
+# --- DOWNLOAD RIWAYAT ---
+if not df_riwayat.empty:
+    csv = df_riwayat.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
