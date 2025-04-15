@@ -173,13 +173,15 @@ if not df_riwayat.empty:
     csv = df_riwayat.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
 
-# --- KATEGORISASI PRESTASI ---
+# --- PIE CHART KATEGORI PRESTASI ---
+st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar")
 if not df_riwayat.empty:
+    # Pastikan kolom prediksi numerik
     df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
 
     def kategorikan(nilai):
         if pd.isna(nilai):
-            return ""
+            return None
         elif nilai < 2.5:
             return "Rendah"
         elif nilai < 3.5:
@@ -189,16 +191,14 @@ if not df_riwayat.empty:
 
     df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(kategorikan)
 
-# --- PIE CHART KATEGORI PRESTASI ---
-st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar")
-if not df_riwayat.empty:
-    kategori_counts = df_riwayat["Kategori"].value_counts()
+    # Hanya hitung yang tidak kosong
+    kategori_counts = df_riwayat["Kategori"].dropna().value_counts()
 
     if not kategori_counts.empty:
         fig2, ax2 = plt.subplots()
-        ax2.pie(kategori_counts, labels=kategori_counts.index, autopct='%1.1f%%', startangle=140,
-                colors=["#FF9999", "#FFCC99", "#99CC99"])
-        ax2.axis('equal')
+        ax2.pie(kategori_counts, labels=kategori_counts.index, autopct='%1.1f%%',
+                startangle=90, colors=["#FF9999", "#FFCC99", "#99CC99"])
+        ax2.axis("equal")
         st.pyplot(fig2)
 
         img_pie = BytesIO()
@@ -206,6 +206,6 @@ if not df_riwayat.empty:
         img_pie.seek(0)
         st.download_button("📥 Download Pie Chart", data=img_pie, file_name="pie_kategori_prestasi.png", mime="image/png")
     else:
-        st.info("Belum ada data kategori prestasi untuk ditampilkan.")
+        st.info("⚠ Tidak ada data kategori valid untuk ditampilkan.")
 else:
-    st.info("Belum ada data kategori prestasi untuk ditampilkan.")
+    st.info("⚠ Belum ada data prediksi untuk divisualisasikan.")
