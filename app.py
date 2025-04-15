@@ -116,9 +116,6 @@ data = sheet.get_all_values()
 df_riwayat = pd.DataFrame(data[1:], columns=HEADER) if len(data) > 1 else pd.DataFrame(columns=HEADER)
 
 if not df_riwayat.empty:
-    df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
-    df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
-
     st.dataframe(df_riwayat)
 
     if st.button("Hapus Semua Riwayat"):
@@ -137,7 +134,6 @@ if not df_riwayat.empty:
         st.warning(f"Data untuk {nama_hapus} telah dihapus!")
         st.rerun()
 
-    # Tambah Fitur: Isi Prestasi Belajar
     st.subheader("Isi Nilai Aktual Prestasi Belajar")
     data_kosong = df_riwayat[df_riwayat["Prestasi Belajar"] == ""]
     if not data_kosong.empty:
@@ -172,25 +168,44 @@ if not df_riwayat.empty:
 else:
     st.write("⚠ Tidak ada data bullying untuk dianalisis.")
 
+# --- DOWNLOAD RIWAYAT ---
+if not df_riwayat.empty:
+    csv = df_riwayat.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
+
+# --- KATEGORISASI PRESTASI ---
+if not df_riwayat.empty:
+    df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
+
+    def kategorikan(nilai):
+        if pd.isna(nilai):
+            return ""
+        elif nilai < 2.5:
+            return "Rendah"
+        elif nilai < 3.5:
+            return "Cukup"
+        else:
+            return "Tinggi"
+
+    df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(kategorikan)
+
 # --- PIE CHART KATEGORI PRESTASI ---
 st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar")
 if not df_riwayat.empty:
     kategori_counts = df_riwayat["Kategori"].value_counts()
 
-    fig2, ax2 = plt.subplots()
-    ax2.pie(kategori_counts, labels=kategori_counts.index, autopct='%1.1f%%', startangle=140,
-            colors=["#FF9999", "#FFCC99", "#99CC99"])
-    ax2.axis('equal')
-    st.pyplot(fig2)
+    if not kategori_counts.empty:
+        fig2, ax2 = plt.subplots()
+        ax2.pie(kategori_counts, labels=kategori_counts.index, autopct='%1.1f%%', startangle=140,
+                colors=["#FF9999", "#FFCC99", "#99CC99"])
+        ax2.axis('equal')
+        st.pyplot(fig2)
 
-    img_pie = BytesIO()
-    fig2.savefig(img_pie, format="png", bbox_inches="tight")
-    img_pie.seek(0)
-    st.download_button("📥 Download Pie Chart", data=img_pie, file_name="pie_kategori_prestasi.png", mime="image/png")
+        img_pie = BytesIO()
+        fig2.savefig(img_pie, format="png", bbox_inches="tight")
+        img_pie.seek(0)
+        st.download_button("📥 Download Pie Chart", data=img_pie, file_name="pie_kategori_prestasi.png", mime="image/png")
+    else:
+        st.info("Belum ada data kategori prestasi untuk ditampilkan.")
 else:
     st.info("Belum ada data kategori prestasi untuk ditampilkan.")
-
-# --- DOWNLOAD RIWAYAT ---
-if not df_riwayat.empty:
-    csv = df_riwayat.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
