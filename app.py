@@ -18,7 +18,7 @@ SPREADSHEET_NAME = "Prediksi prestasi"
 sheet = client.open(SPREADSHEET_NAME).sheet1
 HEADER = ["No", "Nama", "Jenis Kelamin", "Umur", "Kelas", 
           "Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental", 
-          "Jenis Bullying", "Prediksi Prestasi"]
+          "Jenis Bullying", "Prediksi Prestasi", "Prestasi Belajar"]
 
 # Pastikan header tersedia di Google Sheets
 if sheet.row_values(1) != HEADER:
@@ -76,7 +76,7 @@ if mode == "Input Manual":
             input_data = [[bullying, sosial, mental]]
             hasil_prediksi = model.predict(input_data)[0]
             st.success(f"Hasil prediksi prestasi belajar {nama}: {hasil_prediksi:.2f}")
-            new_row = [len(sheet.get_all_values()), nama, jenis_kelamin, umur, kelas, bullying, sosial, mental, jenis_bullying, hasil_prediksi]
+            new_row = [len(sheet.get_all_values()), nama, jenis_kelamin, umur, kelas, bullying, sosial, mental, jenis_bullying, hasil_prediksi, prestasi_manual]
             sheet.append_row(new_row)
             st.info("Data telah disimpan ke Database!")
 
@@ -95,6 +95,7 @@ elif mode == "Upload CSV":
                 row_list = row[["Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
                                 "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"]].tolist()
                 row_list.append(row["Prediksi Prestasi"])
+                row_list.append(row["Prestasi Belajar"])  # Menyertakan "Prestasi Belajar" di Sheet
                 row_list.insert(0, len(sheet.get_all_values()))
                 sheet.append_row(row_list)
             st.success("Data berhasil diproses dan disimpan ke Database!")
