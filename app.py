@@ -18,7 +18,7 @@ SPREADSHEET_NAME = "Prediksi prestasi"
 sheet = client.open(SPREADSHEET_NAME).sheet1
 HEADER = ["No", "Nama", "Jenis Kelamin", "Umur", "Kelas", 
           "Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental", 
-          "Jenis Bullying", "Prediksi Prestasi"]
+          "Jenis Bullying", "Prediksi Prestasi", "Prestasi Aktual"]
 
 # Pastikan header tersedia di Google Sheets
 if sheet.row_values(1) != HEADER:
@@ -64,10 +64,11 @@ if mode == "Input Manual":
     umur = st.number_input("Umur", min_value=5, max_value=20, step=1)
     kelas = st.number_input("Kelas", min_value=1, max_value=12, step=1)
     jenis_bullying = st.selectbox("Jenis Bullying", ["Fisik", "Verbal", "Sosial", "Cyber", "Seksual"])
-    bullying = st.slider("Tingkat Bullying", 1, 10, 5)
-    sosial = st.slider("Dukungan Sosial", 1, 10, 5)
-    mental = st.slider("Kesehatan Mental", 1, 10, 5)
-    
+    bullying = st.slider("Tingkat Bullying (1–5)", 1, 5, 3)
+    sosial = st.slider("Dukungan Sosial (1–5)", 1, 5, 3)
+    mental = st.slider("Kesehatan Mental (1–5)", 1, 5, 3)
+    prestasi_manual = st.slider("Prestasi Belajar (1–5)", 1, 5, 3)
+
     if st.button("Prediksi!"):
         if not nama or jenis_kelamin is None:
             st.error("Harap lengkapi semua field!")
@@ -75,7 +76,7 @@ if mode == "Input Manual":
             input_data = [[bullying, sosial, mental]]
             hasil_prediksi = model.predict(input_data)[0]
             st.success(f"Hasil prediksi prestasi belajar {nama}: {hasil_prediksi:.2f}")
-            new_row = [len(sheet.get_all_values()), nama, jenis_kelamin, umur, kelas, bullying, sosial, mental, jenis_bullying, hasil_prediksi]
+            new_row = [len(sheet.get_all_values()), nama, jenis_kelamin, umur, kelas, bullying, sosial, mental, jenis_bullying, hasil_prediksi, prestasi_manual]
             sheet.append_row(new_row)
             st.info("Data telah disimpan ke Database!")
 
@@ -84,63 +85,53 @@ elif mode == "Upload CSV":
     uploaded_file = st.file_uploader("Upload file CSV", type=["csv"])
     if uploaded_file:
         df_siswa = pd.read_csv(uploaded_file)
-        expected_cols = {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"}
+        expected_cols = {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying", 
+                         "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying", "Prestasi Belajar"}
         if not expected_cols.issubset(df_siswa.columns):
             st.error("Format CSV tidak sesuai!")
         else:
             df_siswa["Prediksi Prestasi"] = model.predict(df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]])
             for _, row in df_siswa.iterrows():
-                sheet.append_row(row.tolist())
-            st.success("Data berhasil diproses dan disimpan Ke Database!")
+                row_list = row[["Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
+                                "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"]].tolist()
+                row_list.append(row["Prediksi Prestasi"])
+                row_list.append(row["Prestasi Belajar"])
+                row_list.insert(0, len(sheet.get_all_values()))
+                sheet.append_row(row_list)
+            st.success("Data berhasil diproses dan disimpan ke Database!")
             st.dataframe(df_siswa)
 
-# --- 3. TAMPILKAN & HAPUS RIWAYAT ---
+# --- TAMPILKAN & HAPUS RIWAYAT ---
 st.subheader("Riwayat Prediksi")
 
-# Ambil data terbaru dari Google Sheets
 data = sheet.get_all_values()
-
-if len(data) > 1:
-    df_riwayat = pd.DataFrame(data[1:], columns=HEADER)  
-else:
-    df_riwayat = pd.DataFrame(columns=HEADER)
+df_riwayat = pd.DataFrame(data[1:], columns=HEADER) if len(data) > 1 else pd.DataFrame(columns=HEADER)
 
 if not df_riwayat.empty:
     st.dataframe(df_riwayat)
 
-    # Hapus Seluruh Riwayat
     if st.button("Hapus Semua Riwayat"):
         sheet.clear()
         sheet.append_row(HEADER)
         st.warning("Seluruh riwayat prediksi telah dihapus!")
         st.rerun()
 
-    # Hapus Data Tertentu
-    if len(df_riwayat) > 0:
-        nama_hapus = st.selectbox("Pilih Nama yang Akan Dihapus", df_riwayat["Nama"].unique())
-        if st.button("Hapus Data Ini"):
-            df_riwayat = df_riwayat[df_riwayat["Nama"] != nama_hapus]
-
-            # Simpan ulang data ke Google Sheets setelah penghapusan
-            sheet.clear()
-            sheet.append_row(HEADER)
-            for i, row in df_riwayat.iterrows():
-                sheet.append_row(row.tolist())
-
-            st.warning(f"Data untuk {nama_hapus} telah dihapus!")
-            st.rerun()
+    nama_hapus = st.selectbox("Pilih Nama yang Akan Dihapus", df_riwayat["Nama"].unique())
+    if st.button("Hapus Data Ini"):
+        df_riwayat = df_riwayat[df_riwayat["Nama"] != nama_hapus]
+        sheet.clear()
+        sheet.append_row(HEADER)
+        for _, row in df_riwayat.iterrows():
+            sheet.append_row(row.tolist())
+        st.warning(f"Data untuk {nama_hapus} telah dihapus!")
+        st.rerun()
 else:
-     st.write("Belum ada riwayat prediksi.")
+    st.write("Belum ada riwayat prediksi.")
 
 # --- ANALISIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
-# Ambil data terbaru dari Google Sheets
 data = sheet.get_all_values()
-
-if len(data) > 1:
-    df_riwayat = pd.DataFrame(data[1:], columns=HEADER)  
-else:
-    df_riwayat = pd.DataFrame(columns=HEADER)
+df_riwayat = pd.DataFrame(data[1:], columns=HEADER) if len(data) > 1 else pd.DataFrame(columns=HEADER)
 
 if not df_riwayat.empty and "Jenis Bullying" in df_riwayat.columns:
     bullying_counts = df_riwayat["Jenis Bullying"].value_counts()
@@ -151,13 +142,12 @@ if not df_riwayat.empty and "Jenis Bullying" in df_riwayat.columns:
     ax.set_xlabel("Jenis Bullying")
     ax.set_ylabel("Jumlah Kasus")
     st.pyplot(fig)
-    
+
     img_buffer = BytesIO()
     fig.savefig(img_buffer, format="png", bbox_inches="tight")
     img_buffer.seek(0)
     st.download_button("📥 Download Grafik", data=img_buffer, file_name="grafik_bullying.png", mime="image/png")
-    
-# Tampilkan informasi bullying terbanyak dan tersedikit
+
     if not bullying_counts.empty:
         st.write(f"📌 Jenis bullying yang paling banyak terjadi: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
         st.write(f"📌 Jenis bullying yang paling sedikit terjadi: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
