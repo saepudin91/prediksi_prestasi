@@ -19,7 +19,7 @@ SPREADSHEET_NAME = "Prediksi prestasi"
 sheet = client.open(SPREADSHEET_NAME).sheet1
 HEADER = ["No", "Nama", "Jenis Kelamin", "Umur", "Kelas", 
           "Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental", 
-          "Jenis Bullying", "Prediksi Prestasi", "Prestasi Belajar"]
+          "Jenis Bullying", "Prediksi Prestasi", "Kategori", "Prestasi Belajar"]
 
 # Pastikan header tersedia di Google Sheets
 if sheet.row_values(1) != HEADER:
@@ -54,6 +54,15 @@ if not st.session_state["authenticated"]:
     login()
     st.stop()
 
+# --- FUNGSI KATEGORI ---
+def klasifikasikan_prestasi(nilai):
+    if nilai < 2.5:
+        return "Rendah"
+    elif nilai < 3.5:
+        return "Cukup"
+    else:
+        return "Tinggi"
+
 # --- APLIKASI UTAMA ---
 st.title("📊 Aplikasi Prediksi Prestasi Belajar")
 mode = st.radio("Pilih mode input:", ("Input Manual", "Upload CSV"))
@@ -74,9 +83,10 @@ if mode == "Input Manual":
         else:
             input_data = [[bullying, sosial, mental]]
             hasil_prediksi = model.predict(input_data)[0]
-            st.success(f"Hasil prediksi prestasi belajar {nama}: {hasil_prediksi:.2f}")
+            kategori = klasifikasikan_prestasi(hasil_prediksi)
+            st.success(f"Hasil prediksi prestasi belajar {nama}: {hasil_prediksi:.2f} ({kategori})")
             new_row = [len(sheet.get_all_values()), nama, jenis_kelamin, umur, kelas,
-                       bullying, sosial, mental, jenis_bullying, hasil_prediksi, ""]
+                       bullying, sosial, mental, jenis_bullying, hasil_prediksi, kategori, ""]
             sheet.append_row(new_row)
             st.info("Data telah disimpan ke Database!")
 
@@ -90,12 +100,12 @@ elif mode == "Upload CSV":
             st.error("Format CSV tidak sesuai!")
         else:
             df_siswa["Prediksi Prestasi"] = model.predict(df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]])
+            df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
             for _, row in df_siswa.iterrows():
                 row_list = row[["Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
-                                "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"]].tolist()
-                row_list.append(row["Prediksi Prestasi"])
-                row_list.append(row.get("Prestasi Belajar", ""))
+                                "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying", "Prediksi Prestasi", "Kategori"]].tolist()
                 row_list.insert(0, len(sheet.get_all_values()))
+                row_list.append(row.get("Prestasi Belajar", ""))
                 sheet.append_row(row_list)
             st.success("Data berhasil diproses dan disimpan ke Database!")
             st.dataframe(df_siswa)
@@ -132,8 +142,8 @@ if not df_riwayat.empty:
         nilai = st.slider("Nilai Prestasi Belajar (1–5)", 1, 5, 3)
         if st.button("Simpan Nilai Aktual"):
             for i, row in enumerate(sheet.get_all_values()[1:], start=2):
-                if row[1] == pilihan and row[10] == "":
-                    sheet.update_cell(i, 11, nilai)
+                if row[1] == pilihan and row[11] == "":
+                    sheet.update_cell(i, 12, nilai)
                     st.success("Nilai aktual berhasil disimpan!")
                     st.rerun()
 
@@ -163,3 +173,20 @@ else:
 if not df_riwayat.empty:
     csv = df_riwayat.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
+# --- PIE CHART KATEGORI PRESTASI ---
+st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar")
+if not df_riwayat.empty:
+    kategori_counts = df_riwayat["Kategori"].value_counts()
+
+    fig2, ax2 = plt.subplots()
+    ax2.pie(kategori_counts, labels=kategori_counts.index, autopct='%1.1f%%', startangle=140,
+            colors=["#FF9999", "#FFCC99", "#99CC99"])
+    ax2.axis('equal')
+    st.pyplot(fig2)
+
+    img_pie = BytesIO()
+    fig2.savefig(img_pie, format="png", bbox_inches="tight")
+    img_pie.seek(0)
+    st.download_button("📥 Download Pie Chart", data=img_pie, file_name="pie_kategori_prestasi.png", mime="image/png")
+else:
+    st.info("Belum ada data kategori prestasi untuk ditampilkan.")
