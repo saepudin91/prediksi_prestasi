@@ -27,7 +27,7 @@ if sheet.row_values(1) != HEADER:
     sheet.append_row(HEADER)
 
 # --- LOAD MODEL ---
-model_path = "model_regresi.pkl"
+model_path = "model_prestasi.pkl"
 with open(model_path, "rb") as f:
     model = pickle.load(f)
 
