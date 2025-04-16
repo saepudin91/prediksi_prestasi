@@ -173,32 +173,36 @@ if not df_riwayat.empty:
     csv = df_riwayat.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
 
-# --- DISTRIBUSI KATEGORI PRESTASI (tanpa pie chart dulu) ---
-st.subheader("📋 Tabel Distribusi Kategori Prediksi Prestasi Belajar")
-if not df_riwayat.empty: 
-    # Ubah ke numerik jika perlu
+# --- DISTRIBUSI KATEGORI PRESTASI DENGAN PIE CHART ---
+st.subheader("📊 Distribusi Kategori Prediksi Prestasi Belajar")
+
+if not df_riwayat.empty:
+    # Ubah ke float
     df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
 
-    # Klasifikasikan
-    def kategorikan(nilai):
-        if pd.isna(nilai):
-            return None
-        elif nilai < 2.5:
-            return "Rendah"
-        elif nilai < 3.5:
-            return "Cukup"
-        else:
-            return "Tinggi"
+    # Hapus baris dengan nilai NaN di Prediksi Prestasi
+    df_valid = df_riwayat.dropna(subset=["Prediksi Prestasi"]).copy()
 
-    df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(kategorikan)
+    # Klasifikasikan ulang
+    df_valid["Kategori"] = df_valid["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
 
-    # Tampilkan hasil kategorisasi
-    st.write("Data dengan kolom Kategori:")
-    st.dataframe(df_riwayat[["Nama", "Prediksi Prestasi", "Kategori"]])
+    # Hitung jumlah tiap kategori
+    kategori_counts = df_valid["Kategori"].value_counts()
 
-    # Tampilkan distribusi kategori
-    kategori_counts = df_riwayat["Kategori"].value_counts(dropna=True)
-    st.write("Distribusi jumlah per kategori:")
-    st.dataframe(kategori_counts.reset_index().rename(columns={"index": "Kategori", "count": "Jumlah"}))
+    # Tampilkan pie chart
+    fig, ax = plt.subplots()
+    ax.pie(kategori_counts, labels=kategori_counts.index, autopct="%1.1f%%", startangle=90)
+    ax.set_title("Distribusi Kategori Prestasi")
+    ax.axis("equal")
+    st.pyplot(fig)
+
+    # Tampilkan tabel jumlah
+    st.write("Jumlah per kategori:")
+    st.dataframe(kategori_counts.reset_index().rename(columns={"index": "Kategori", "Kategori": "Jumlah"}))
+
+    # Tombol download CSV
+    csv = df_riwayat.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
+
 else:
-    st.info("⚠ Belum ada data prediksi untuk ditampilkan.")
+    st.info("⚠ Belum ada data prediksi yang valid untuk ditampilkan.")
