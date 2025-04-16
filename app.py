@@ -173,17 +173,13 @@ if not df_riwayat.empty:
     csv = df_riwayat.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
 
-# --- PIE CHART KATEGORI PRESTASI --- 
-st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar") 
+# --- DISTRIBUSI KATEGORI PRESTASI (tanpa pie chart dulu) ---
+st.subheader("📋 Tabel Distribusi Kategori Prediksi Prestasi Belajar")
 if not df_riwayat.empty: 
-    # Pastikan kolom prediksi numerik 
-    st.write("Konversi 'Prediksi Prestasi' menjadi numerik...")  # Pesan untuk menunjukkan bahwa konversi sedang berlangsung
+    # Ubah ke numerik jika perlu
     df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
-    
-    # Debugging: cek hasil konversi "Prediksi Prestasi"
-    st.write("Data Prediksi Prestasi yang sudah dikonversi (menampilkan 5 baris pertama):")
-    st.write(df_riwayat[["Nama", "Prediksi Prestasi"]].head())
 
+    # Klasifikasikan
     def kategorikan(nilai):
         if pd.isna(nilai):
             return None
@@ -196,31 +192,13 @@ if not df_riwayat.empty:
 
     df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(kategorikan)
 
-    # Debugging: cek hasil kategori
-    st.write("Data Kategori setelah pemetaan (menampilkan 5 baris pertama):")
-    st.write(df_riwayat[["Nama", "Prediksi Prestasi", "Kategori"]].head())
+    # Tampilkan hasil kategorisasi
+    st.write("Data dengan kolom Kategori:")
+    st.dataframe(df_riwayat[["Nama", "Prediksi Prestasi", "Kategori"]])
 
-    # Hanya hitung yang tidak kosong
-    kategori_counts = df_riwayat["Kategori"].dropna().value_counts()
-
-    # Debugging: cek hasil kategori_counts
-    st.write("Distribusi Kategori (kategori_counts):")
-    st.write(kategori_counts)
-
-    if not kategori_counts.empty:
-        fig2, ax2 = plt.subplots()
-        ax2.pie(kategori_counts, labels=kategori_counts.index, autopct='%1.1f%%',
-                startangle=90, colors=["#FF9999", "#FFCC99", "#99CC99"])
-        ax2.axis("equal")
-        st.pyplot(fig2)
-
-        img_pie = BytesIO()
-        fig2.savefig(img_pie, format="png", bbox_inches="tight")
-        img_pie.seek(0)
-        st.download_button("📥 Download Pie Chart", data=img_pie, file_name="pie_kategori_prestasi.png", mime="image/png")
-    else:
-        st.info("⚠ Tidak ada data kategori valid untuk ditampilkan.")
+    # Tampilkan distribusi kategori
+    kategori_counts = df_riwayat["Kategori"].value_counts(dropna=True)
+    st.write("Distribusi jumlah per kategori:")
+    st.dataframe(kategori_counts.reset_index().rename(columns={"index": "Kategori", "count": "Jumlah"}))
 else:
-    st.info("⚠ Belum ada data prediksi untuk divisualisasikan.")
-
-st.stop()  # Menghentikan eksekusi untuk memberi kesempatan melihat debug
+    st.info("⚠ Belum ada data prediksi untuk ditampilkan.")
