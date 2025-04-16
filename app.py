@@ -177,11 +177,13 @@ if not df_riwayat.empty:
 st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar") 
 if not df_riwayat.empty: 
     # Pastikan kolom prediksi numerik 
+    st.write("Konversi 'Prediksi Prestasi' menjadi numerik...")  # Pesan untuk menunjukkan bahwa konversi sedang berlangsung
     df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
     
     # Debugging: cek hasil konversi "Prediksi Prestasi"
-    st.write("Data Prediksi Prestasi yang sudah dikonversi:", df_riwayat[["Nama", "Prediksi Prestasi"]].head())
-    
+    st.write("Data Prediksi Prestasi yang sudah dikonversi (menampilkan 5 baris pertama):")
+    st.write(df_riwayat[["Nama", "Prediksi Prestasi"]].head())
+
     def kategorikan(nilai):
         if pd.isna(nilai):
             return None
@@ -195,13 +197,15 @@ if not df_riwayat.empty:
     df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(kategorikan)
 
     # Debugging: cek hasil kategori
-    st.write("Data Kategori setelah pemetaan:", df_riwayat[["Nama", "Prediksi Prestasi", "Kategori"]].head())
+    st.write("Data Kategori setelah pemetaan (menampilkan 5 baris pertama):")
+    st.write(df_riwayat[["Nama", "Prediksi Prestasi", "Kategori"]].head())
 
     # Hanya hitung yang tidak kosong
     kategori_counts = df_riwayat["Kategori"].dropna().value_counts()
 
     # Debugging: cek hasil kategori_counts
-    st.write("Distribusi Kategori (kategori_counts):", kategori_counts)
+    st.write("Distribusi Kategori (kategori_counts):")
+    st.write(kategori_counts)
 
     if not kategori_counts.empty:
         fig2, ax2 = plt.subplots()
@@ -218,3 +222,5 @@ if not df_riwayat.empty:
         st.info("⚠ Tidak ada data kategori valid untuk ditampilkan.")
 else:
     st.info("⚠ Belum ada data prediksi untuk divisualisasikan.")
+
+st.stop()  # Menghentikan eksekusi untuk memberi kesempatan melihat debug
