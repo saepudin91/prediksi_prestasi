@@ -173,12 +173,15 @@ if not df_riwayat.empty:
     csv = df_riwayat.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
 
-# --- PIE CHART KATEGORI PRESTASI ---
-st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar")
-if not df_riwayat.empty:
-    # Pastikan kolom prediksi numerik
+# --- PIE CHART KATEGORI PRESTASI --- 
+st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar") 
+if not df_riwayat.empty: 
+    # Pastikan kolom prediksi numerik 
     df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
-
+    
+    # Debugging: cek hasil konversi "Prediksi Prestasi"
+    st.write("Data Prediksi Prestasi yang sudah dikonversi:", df_riwayat[["Nama", "Prediksi Prestasi"]].head())
+    
     def kategorikan(nilai):
         if pd.isna(nilai):
             return None
@@ -191,8 +194,14 @@ if not df_riwayat.empty:
 
     df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(kategorikan)
 
+    # Debugging: cek hasil kategori
+    st.write("Data Kategori setelah pemetaan:", df_riwayat[["Nama", "Prediksi Prestasi", "Kategori"]].head())
+
     # Hanya hitung yang tidak kosong
     kategori_counts = df_riwayat["Kategori"].dropna().value_counts()
+
+    # Debugging: cek hasil kategori_counts
+    st.write("Distribusi Kategori (kategori_counts):", kategori_counts)
 
     if not kategori_counts.empty:
         fig2, ax2 = plt.subplots()
