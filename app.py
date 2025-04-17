@@ -102,14 +102,13 @@ elif mode == "Upload CSV":
             df_siswa["Prediksi Prestasi"] = model.predict(df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]])
             df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
 
-            # Ambil data lama untuk mencegah duplikat
             existing_data = sheet.get_all_values()
             existing_names = set(row[1] for row in existing_data[1:])  # Kolom 'Nama'
 
             new_data = []
             for _, row in df_siswa.iterrows():
                 if row["Nama"] in existing_names:
-                    continue  # Lewati jika sudah ada
+                    continue
                 row_list = row[["Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
                                 "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying", "Prediksi Prestasi", "Kategori"]].tolist()
                 row_list.insert(0, len(sheet.get_all_values()))
@@ -121,9 +120,9 @@ elif mode == "Upload CSV":
                 st.success(f"{len(new_data)} baris data berhasil diproses dan disimpan ke Database!")
                 st.dataframe(pd.DataFrame(new_data))
             else:
-                st.info("Tidak ada data baru yang ditambahkan. Semua siswa sudah ada di database.")
+                st.info("Tidak ada data baru yang ditambahkan.")
 
-# --- TAMPILKAN & HAPUS RIWAYAT ---
+# --- TAMPILKAN RIWAYAT ---
 st.subheader("Riwayat Prediksi")
 data = sheet.get_all_values()
 df_riwayat = pd.DataFrame(data[1:], columns=HEADER) if len(data) > 1 else pd.DataFrame(columns=HEADER)
@@ -159,7 +158,7 @@ if not df_riwayat.empty:
                     st.success("Nilai aktual berhasil disimpan!")
                     st.rerun()
 
-# --- ANALISIS BULLYING ---
+# --- ANALISIS JENIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
 if not df_riwayat.empty:
     bullying_counts = df_riwayat["Jenis Bullying"].value_counts()
@@ -176,46 +175,29 @@ if not df_riwayat.empty:
     img_buffer.seek(0)
     st.download_button("📥 Download Grafik", data=img_buffer, file_name="grafik_bullying.png", mime="image/png")
 
-    st.write(f"📌 Jenis bullying yang paling banyak terjadi: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
-    st.write(f"📌 Jenis bullying yang paling sedikit terjadi: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
+    st.write(f"📌 Jenis bullying terbanyak: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
+    st.write(f"📌 Jenis bullying tersedikit: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
 else:
     st.write("⚠ Tidak ada data bullying untuk dianalisis.")
 
-# --- DOWNLOAD RIWAYAT ---
-if not df_riwayat.empty:
-    csv = df_riwayat.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
-
-# --- DISTRIBUSI KATEGORI PRESTASI DENGAN PIE CHART ---
+# --- PIE CHART KATEGORI ---
 st.subheader("📊 Distribusi Kategori Prediksi Prestasi Belajar")
-
 if not df_riwayat.empty:
-    # Ubah ke float
     df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
-
-    # Hapus baris dengan nilai NaN di Prediksi Prestasi
     df_valid = df_riwayat.dropna(subset=["Prediksi Prestasi"]).copy()
-
-    # Klasifikasikan ulang
     df_valid["Kategori"] = df_valid["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
-
-    # Hitung jumlah tiap kategori
     kategori_counts = df_valid["Kategori"].value_counts()
 
-    # Tampilkan pie chart
     fig, ax = plt.subplots()
     ax.pie(kategori_counts, labels=kategori_counts.index, autopct="%1.1f%%", startangle=90)
     ax.set_title("Distribusi Kategori Prestasi")
     ax.axis("equal")
     st.pyplot(fig)
 
-    # Tampilkan tabel jumlah
     st.write("Jumlah per kategori:")
     st.dataframe(kategori_counts.reset_index().rename(columns={"index": "Kategori", "Kategori": "Jumlah"}))
 
-    # Tombol download CSV
     csv = df_riwayat.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
-
 else:
     st.info("⚠ Belum ada data prediksi yang valid untuk ditampilkan.")
