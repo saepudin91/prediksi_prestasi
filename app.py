@@ -32,7 +32,7 @@ with open(model_path, "rb") as f:
     model = pickle.load(f)
 
 # --- FITUR LOGIN ---
-USER_CREDENTIALS = {"user3": "user123", "admin": "adminpass"}
+USER_CREDENTIALS = {"user3": "password123", "admin": "adminpass"}
 
 def login():
     st.title("🔒 Login ke Aplikasi")
@@ -101,27 +101,14 @@ elif mode == "Upload CSV":
         else:
             df_siswa["Prediksi Prestasi"] = model.predict(df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]])
             df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
-
-            # Ambil data lama untuk mencegah duplikat
-            existing_data = sheet.get_all_values()
-            existing_names = set(row[1] for row in existing_data[1:])  # Kolom 'Nama'
-
-            new_data = []
             for _, row in df_siswa.iterrows():
-                if row["Nama"] in existing_names:
-                    continue  # Lewati jika sudah ada
                 row_list = row[["Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
                                 "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying", "Prediksi Prestasi", "Kategori"]].tolist()
                 row_list.insert(0, len(sheet.get_all_values()))
                 row_list.append(row.get("Prestasi Belajar", ""))
                 sheet.append_row(row_list)
-                new_data.append(row)
-
-            if new_data:
-                st.success(f"{len(new_data)} baris data berhasil diproses dan disimpan ke Database!")
-                st.dataframe(pd.DataFrame(new_data))
-            else:
-                st.info("Tidak ada data baru yang ditambahkan. Semua siswa sudah ada di database.")
+            st.success("Data berhasil diproses dan disimpan ke Database!")
+            st.dataframe(df_siswa)
 
 # --- TAMPILKAN & HAPUS RIWAYAT ---
 st.subheader("Riwayat Prediksi")
@@ -147,6 +134,7 @@ if not df_riwayat.empty:
         st.warning(f"Data untuk {nama_hapus} telah dihapus!")
         st.rerun()
 
+    # Tambah Fitur: Isi Prestasi Belajar
     st.subheader("Isi Nilai Aktual Prestasi Belajar")
     data_kosong = df_riwayat[df_riwayat["Prestasi Belajar"] == ""]
     if not data_kosong.empty:
@@ -186,36 +174,36 @@ if not df_riwayat.empty:
     csv = df_riwayat.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
 
-# --- DISTRIBUSI KATEGORI PRESTASI DENGAN PIE CHART ---
-st.subheader("📊 Distribusi Kategori Prediksi Prestasi Belajar")
-
+# --- KATEGORISASI PRESTASI ---
 if not df_riwayat.empty:
-    # Ubah ke float
     df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
+    
+    def kategorikan(nilai):
+        if pd.isna(nilai):
+            return ""
+        elif nilai < 2.5:
+            return "Rendah"
+        elif nilai < 3.5:
+            return "Cukup"
+        else:
+            return "Tinggi"
 
-    # Hapus baris dengan nilai NaN di Prediksi Prestasi
-    df_valid = df_riwayat.dropna(subset=["Prediksi Prestasi"]).copy()
+    df_riwayat["Kategori"] = df_riwayat["Prediksi Prestasi"].apply(kategorikan)
+    
+# --- PIE CHART KATEGORI PRESTASI ---
+st.subheader("📈 Distribusi Kategori Prediksi Prestasi Belajar")
+if not df_riwayat.empty:
+    kategori_counts = df_riwayat["Kategori"].value_counts()
 
-    # Klasifikasikan ulang
-    df_valid["Kategori"] = df_valid["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
+    fig2, ax2 = plt.subplots()
+    ax2.pie(kategori_counts, labels=kategori_counts.index, autopct='%1.1f%%', startangle=140,
+            colors=["#FF9999", "#FFCC99", "#99CC99"])
+    ax2.axis('equal')
+    st.pyplot(fig2)
 
-    # Hitung jumlah tiap kategori
-    kategori_counts = df_valid["Kategori"].value_counts()
-
-    # Tampilkan pie chart
-    fig, ax = plt.subplots()
-    ax.pie(kategori_counts, labels=kategori_counts.index, autopct="%1.1f%%", startangle=90)
-    ax.set_title("Distribusi Kategori Prestasi")
-    ax.axis("equal")
-    st.pyplot(fig)
-
-    # Tampilkan tabel jumlah
-    st.write("Jumlah per kategori:")
-    st.dataframe(kategori_counts.reset_index().rename(columns={"index": "Kategori", "Kategori": "Jumlah"}))
-
-    # Tombol download CSV
-    csv = df_riwayat.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
-
+    img_pie = BytesIO()
+    fig2.savefig(img_pie, format="png", bbox_inches="tight")
+    img_pie.seek(0)
+    st.download_button("📥 Download Pie Chart", data=img_pie, file_name="pie_kategori_prestasi.png", mime="image/png")
 else:
-    st.info("⚠ Belum ada data prediksi yang valid untuk ditampilkan.")
+    st.info("Belum ada data kategori prestasi untuk ditampilkan.")
