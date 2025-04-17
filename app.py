@@ -32,7 +32,7 @@ with open(model_path, "rb") as f:
     model = pickle.load(f)
 
 # --- FITUR LOGIN ---
-USER_CREDENTIALS = {"user3": "password123", "admin": "adminpass"}
+USER_CREDENTIALS = {"user3": "user123", "admin": "adminpass"}
 
 def login():
     st.title("🔒 Login ke Aplikasi")
