@@ -153,11 +153,16 @@ if not df_riwayat.empty:
         pilihan = st.selectbox("Pilih Nama yang akan diisi Prestasi Belajar", data_kosong["Nama"].unique())
         nilai = st.slider("Nilai Prestasi Belajar (1–5)", 1, 5, 3)
         if st.button("Simpan Nilai Aktual"):
-            for i, row in enumerate(sheet.get_all_values()[1:], start=2):
-                if row[1] == pilihan and row[11] == "":
-                    sheet.update_cell(i, 12, nilai)
-                    st.success("Nilai aktual berhasil disimpan!")
-                    st.rerun()
+            data_all = sheet.get_all_values()
+for idx, row in enumerate(data_all[1:], start=2):
+    if row[1] == pilihan and row[11] == "":
+        sheet.update_cell(idx, 12, nilai)
+        st.success("Nilai aktual berhasil disimpan!")
+        break
+else:
+    st.warning("Data tidak ditemukan atau sudah memiliki nilai.")
+st.stop()  # Jangan rerun otomatis agar tidak duplikat
+
 
 # --- ANALISIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
