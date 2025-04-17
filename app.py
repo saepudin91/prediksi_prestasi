@@ -62,6 +62,14 @@ def klasifikasikan_prestasi(nilai):
     else:
         return "Tinggi"
 
+# --- CEK DUPLIKAT ---
+def is_duplicate(nama, umur, kelas):
+    existing_data = sheet.get_all_records()
+    for row in existing_data:
+        if row["Nama"] == nama and int(row["Umur"]) == int(umur) and int(row["Kelas"]) == int(kelas):
+            return True
+    return False
+
 # --- APLIKASI UTAMA ---
 st.title("📊 Aplikasi Prediksi Prestasi Belajar")
 mode = st.radio("Pilih mode input:", ("Input Manual", "Upload CSV"))
@@ -79,6 +87,8 @@ if mode == "Input Manual":
     if st.button("Prediksi!"):
         if not nama or jenis_kelamin is None:
             st.error("Harap lengkapi semua field!")
+        elif is_duplicate(nama, umur, kelas):
+            st.warning("Data siswa ini sudah pernah dimasukkan.")
         else:
             input_data = [[bullying, sosial, mental]]
             hasil_prediksi = model.predict(input_data)[0]
@@ -103,23 +113,22 @@ elif mode == "Upload CSV":
             )
             df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
 
-            existing_data = sheet.get_all_values()
-            existing_len = len(existing_data)
-            existing_names = set(row[1] for row in existing_data[1:])  # Kolom 'Nama'
+            existing_data = sheet.get_all_records()
+            existing_keys = set((row["Nama"], int(row["Umur"]), int(row["Kelas"])) for row in existing_data)
 
             new_data = []
             for _, row in df_siswa.iterrows():
-                if row["Nama"] in existing_names:
+                key = (row["Nama"], int(row["Umur"]), int(row["Kelas"]))
+                if key in existing_keys:
                     continue
                 row_list = row[[
                     "Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
                     "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying",
                     "Prediksi Prestasi", "Kategori"
                 ]].tolist()
-                row_list.insert(0, existing_len)
-                row_list.append(row.get("Prestasi Belajar", ""))
+                row_list.insert(0, len(sheet.get_all_values()))
+                row_list.append("")
                 sheet.append_row(row_list)
-                existing_len += 1
                 new_data.append(row)
 
             if new_data:
@@ -130,7 +139,6 @@ elif mode == "Upload CSV":
 
 # --- RIWAYAT & INPUT NILAI AKTUAL ---
 st.subheader("📝 Riwayat Prediksi")
-
 data = sheet.get_all_records()
 df_riwayat = pd.DataFrame(data)
 
@@ -158,7 +166,6 @@ else:
 
 # --- ANALISIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
-
 if not df_riwayat.empty:
     bullying_counts = df_riwayat["Jenis Bullying"].value_counts()
     fig, ax = plt.subplots(figsize=(8, 6))
