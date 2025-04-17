@@ -66,10 +66,6 @@ def klasifikasikan_prestasi(nilai):
 st.title("📊 Aplikasi Prediksi Prestasi Belajar")
 mode = st.radio("Pilih mode input:", ("Input Manual", "Upload CSV"))
 
-# Ambil semua data yang sudah ada untuk pengecekan duplikat
-existing_data = sheet.get_all_values()
-existing_df = pd.DataFrame(existing_data[1:], columns=existing_data[0])
-
 if mode == "Input Manual":
     nama = st.text_input("Nama Siswa").strip()
     jenis_kelamin = st.radio("Jenis Kelamin", ["Laki-laki", "Perempuan"], index=None)
@@ -84,23 +80,14 @@ if mode == "Input Manual":
         if not nama or jenis_kelamin is None:
             st.error("Harap lengkapi semua field!")
         else:
-            # Cek duplikat berdasarkan Nama, Umur, dan Kelas
-            duplikat = (
-                (existing_df["Nama"] == nama) &
-                (existing_df["Umur"] == str(umur)) &
-                (existing_df["Kelas"] == str(kelas))
-            ).any()
-            if duplikat:
-                st.warning("Data siswa ini sudah ada di database. Tidak disimpan ulang.")
-            else:
-                input_data = [[bullying, sosial, mental]]
-                hasil_prediksi = model.predict(input_data)[0]
-                kategori = klasifikasikan_prestasi(hasil_prediksi)
-                st.success(f"Hasil prediksi prestasi belajar {nama}: {hasil_prediksi:.2f} ({kategori})")
-                new_row = [len(existing_data), nama, jenis_kelamin, umur, kelas,
-                           bullying, sosial, mental, jenis_bullying, hasil_prediksi, kategori, ""]
-                sheet.append_row(new_row)
-                st.info("Data telah disimpan ke Database!")
+            input_data = [[bullying, sosial, mental]]
+            hasil_prediksi = model.predict(input_data)[0]
+            kategori = klasifikasikan_prestasi(hasil_prediksi)
+            st.success(f"Hasil prediksi prestasi belajar {nama}: {hasil_prediksi:.2f} ({kategori})")
+            new_row = [len(sheet.get_all_values()), nama, jenis_kelamin, umur, kelas,
+                       bullying, sosial, mental, jenis_bullying, hasil_prediksi, kategori, ""]
+            sheet.append_row(new_row)
+            st.info("Data telah disimpan ke Database!")
 
 elif mode == "Upload CSV":
     uploaded_file = st.file_uploader("Upload file CSV", type=["csv"])
@@ -111,6 +98,7 @@ elif mode == "Upload CSV":
         if not expected_cols.issubset(df_siswa.columns):
             st.error("Format CSV tidak sesuai!")
         else:
+            st.dataframe(df_siswa)  # tampilkan isi CSV
             if st.button("Prediksi CSV"):
                 df_siswa["Prediksi Prestasi"] = model.predict(
                     df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
@@ -144,6 +132,7 @@ elif mode == "Upload CSV":
 
 # --- RIWAYAT & INPUT NILAI AKTUAL ---
 st.subheader("📝 Riwayat Prediksi")
+
 data = sheet.get_all_records()
 df_riwayat = pd.DataFrame(data)
 
@@ -186,8 +175,8 @@ if not df_riwayat.empty:
     img_buffer.seek(0)
     st.download_button("📥 Download Grafik", data=img_buffer, file_name="grafik_bullying.png", mime="image/png")
 
-    st.write(f"📌 Jenis bullying paling banyak: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
-    st.write(f"📌 Jenis bullying paling sedikit: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
+    st.write(f"📌 Jenis bullying yang paling banyak terjadi: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
+    st.write(f"📌 Jenis bullying yang paling sedikit terjadi: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
 else:
     st.write("⚠ Tidak ada data bullying untuk dianalisis.")
 
