@@ -99,22 +99,30 @@ elif mode == "Upload CSV":
         if not expected_cols.issubset(df_siswa.columns):
             st.error("Format CSV tidak sesuai!")
         else:
-            df_siswa["Prediksi Prestasi"] = model.predict(df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]])
+            # Prediksi dan klasifikasi
+            df_siswa["Prediksi Prestasi"] = model.predict(
+                df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
+            )
             df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
 
-            # Ambil data lama untuk mencegah duplikat
+            # Ambil data lama hanya sekali
             existing_data = sheet.get_all_values()
+            existing_len = len(existing_data)
             existing_names = set(row[1] for row in existing_data[1:])  # Kolom 'Nama'
 
             new_data = []
             for _, row in df_siswa.iterrows():
                 if row["Nama"] in existing_names:
                     continue  # Lewati jika sudah ada
-                row_list = row[["Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
-                                "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying", "Prediksi Prestasi", "Kategori"]].tolist()
-                row_list.insert(0, len(sheet.get_all_values()))
+                row_list = row[[
+                    "Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
+                    "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying",
+                    "Prediksi Prestasi", "Kategori"
+                ]].tolist()
+                row_list.insert(0, existing_len)  # Nomor urut
                 row_list.append(row.get("Prestasi Belajar", ""))
                 sheet.append_row(row_list)
+                existing_len += 1  # Tambah index
                 new_data.append(row)
 
             if new_data:
@@ -122,47 +130,6 @@ elif mode == "Upload CSV":
                 st.dataframe(pd.DataFrame(new_data))
             else:
                 st.info("Tidak ada data baru yang ditambahkan. Semua siswa sudah ada di database.")
-
-# --- TAMPILKAN & HAPUS RIWAYAT ---
-st.subheader("Riwayat Prediksi")
-data = sheet.get_all_values()
-df_riwayat = pd.DataFrame(data[1:], columns=HEADER) if len(data) > 1 else pd.DataFrame(columns=HEADER)
-
-if not df_riwayat.empty:
-    st.dataframe(df_riwayat)
-
-    if st.button("Hapus Semua Riwayat"):
-        sheet.clear()
-        sheet.append_row(HEADER)
-        st.warning("Seluruh riwayat prediksi telah dihapus!")
-        st.rerun()
-
-    nama_hapus = st.selectbox("Pilih Nama yang Akan Dihapus", df_riwayat["Nama"].unique())
-    if st.button("Hapus Data Ini"):
-        df_riwayat = df_riwayat[df_riwayat["Nama"] != nama_hapus]
-        sheet.clear()
-        sheet.append_row(HEADER)
-        for _, row in df_riwayat.iterrows():
-            sheet.append_row(row.tolist())
-        st.warning(f"Data untuk {nama_hapus} telah dihapus!")
-        st.rerun()
-
-    st.subheader("Isi Nilai Aktual Prestasi Belajar")
-    data_kosong = df_riwayat[df_riwayat["Prestasi Belajar"] == ""]
-    if not data_kosong.empty:
-        pilihan = st.selectbox("Pilih Nama yang akan diisi Prestasi Belajar", data_kosong["Nama"].unique())
-        nilai = st.slider("Nilai Prestasi Belajar (1–5)", 1, 5, 3)
-        if st.button("Simpan Nilai Aktual"):
-            data_all = sheet.get_all_values()
-for idx, row in enumerate(data_all[1:], start=2):
-    if row[1] == pilihan and row[11] == "":
-        sheet.update_cell(idx, 12, nilai)
-        st.success("Nilai aktual berhasil disimpan!")
-        break
-else:
-    st.warning("Data tidak ditemukan atau sudah memiliki nilai.")
-st.stop()  # Jangan rerun otomatis agar tidak duplikat
-
 
 # --- ANALISIS BULLYING ---
 st.subheader("📊 Analisis Jenis Bullying")
