@@ -89,53 +89,61 @@ if mode == "Input Manual":
             st.info("Data telah disimpan ke Database!")
 
 elif mode == "Upload CSV":
-    uploaded_file = st.file_uploader("Upload file CSV", type=["csv"])
-    
-    if uploaded_file is not None:
-        # Menampilkan file CSV setelah diunggah
-        df_siswa = pd.read_csv(uploaded_file)
-        expected_cols = {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
-                         "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"}
+    uploaded_file = st.file_uploader("Upload file CSV", type=["csv"], key="upload_csv")
 
-        if not expected_cols.issubset(df_siswa.columns):
-            st.error("Format CSV tidak sesuai!")
-        else:
-            st.success("File berhasil diunggah! Klik tombol di bawah untuk memproses prediksi.")
-            st.dataframe(df_siswa)  # Menampilkan data CSV yang diunggah
+    if uploaded_file:
+        if "df_csv" not in st.session_state:
+            try:
+                df_temp = pd.read_csv(uploaded_file)
+                expected_cols = {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
+                                 "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"}
 
-            # Tombol hanya muncul setelah file diunggah
-            if st.button("Prediksi CSV"):
-                # Proses prediksi setelah tombol ditekan
-                df_siswa["Prediksi Prestasi"] = model.predict(
-                    df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
-                )
-                df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
-
-                # Simpan data ke Google Sheets
-                existing_data = sheet.get_all_values()
-                existing_len = len(existing_data)
-                existing_names = set(row[1] for row in existing_data[1:])
-
-                new_data = []
-                for _, row in df_siswa.iterrows():
-                    if row["Nama"] in existing_names:
-                        continue
-                    row_list = row[[ 
-                        "Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
-                        "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying",
-                        "Prediksi Prestasi", "Kategori"
-                    ]].tolist()
-                    row_list.insert(0, existing_len)
-                    row_list.append(row.get("Prestasi Belajar", ""))
-                    sheet.append_row(row_list)
-                    existing_len += 1
-                    new_data.append(row)
-
-                if new_data:
-                    st.success(f"{len(new_data)} baris data berhasil diproses dan disimpan ke Database!")
-                    st.dataframe(pd.DataFrame(new_data))
+                if not expected_cols.issubset(df_temp.columns):
+                    st.error("Format CSV tidak sesuai!")
                 else:
-                    st.info("Tidak ada data baru yang ditambahkan. Semua siswa sudah ada di database.")
+                    st.session_state.df_csv = df_temp
+                    st.success("File berhasil diunggah! Klik tombol di bawah untuk memproses prediksi.")
+            except Exception as e:
+                st.error(f"Gagal membaca file CSV: {e}")
+                st.stop()
+
+    if "df_csv" in st.session_state:
+        st.dataframe(st.session_state.df_csv)
+
+        if st.button("Prediksi CSV"):
+            df_siswa = st.session_state.df_csv.copy()
+            df_siswa["Prediksi Prestasi"] = model.predict(
+                df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
+            )
+            df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
+
+            existing_data = sheet.get_all_values()
+            existing_len = len(existing_data)
+            existing_names = set(row[1] for row in existing_data[1:])
+
+            new_data = []
+            for _, row in df_siswa.iterrows():
+                if row["Nama"] in existing_names:
+                    continue
+                row_list = row[[
+                    "Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
+                    "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying",
+                    "Prediksi Prestasi", "Kategori"
+                ]].tolist()
+                row_list.insert(0, existing_len)
+                row_list.append(row.get("Prestasi Belajar", ""))
+                sheet.append_row(row_list)
+                existing_len += 1
+                new_data.append(row)
+
+            if new_data:
+                st.success(f"{len(new_data)} baris data berhasil diproses dan disimpan ke Database!")
+                st.dataframe(pd.DataFrame(new_data))
+            else:
+                st.info("Tidak ada data baru yang ditambahkan. Semua siswa sudah ada di database.")
+
+        if st.button("Reset Upload CSV"):
+            del st.session_state["df_csv"]
 
 # --- RIWAYAT & INPUT NILAI AKTUAL ---
 st.subheader("📝 Riwayat Prediksi")
