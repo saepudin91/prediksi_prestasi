@@ -102,12 +102,15 @@ elif mode == "Upload CSV":
             st.success("File berhasil diunggah! Klik tombol di bawah untuk memproses prediksi.")
             st.dataframe(df_siswa)
 
+            # Pastikan tombol muncul setelah file terdeteksi
             if st.button("Prediksi CSV"):
+                # Memproses prediksi CSV
                 df_siswa["Prediksi Prestasi"] = model.predict(
                     df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
                 )
                 df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
 
+                # Simpan data ke Google Sheets
                 existing_data = sheet.get_all_values()
                 existing_len = len(existing_data)
                 existing_names = set(row[1] for row in existing_data[1:])
@@ -116,7 +119,7 @@ elif mode == "Upload CSV":
                 for _, row in df_siswa.iterrows():
                     if row["Nama"] in existing_names:
                         continue
-                    row_list = row[[
+                    row_list = row[[ 
                         "Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
                         "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying",
                         "Prediksi Prestasi", "Kategori"
@@ -132,6 +135,7 @@ elif mode == "Upload CSV":
                     st.dataframe(pd.DataFrame(new_data))
                 else:
                     st.info("Tidak ada data baru yang ditambahkan. Semua siswa sudah ada di database.")
+
 
 # --- RIWAYAT & INPUT NILAI AKTUAL ---
 st.subheader("📝 Riwayat Prediksi")
