@@ -61,19 +61,18 @@ def klasifikasikan_prestasi(nilai):
     else:
         return "Tinggi"
 
-# --- KONVERSI KUALITATIF ---
-def konversi_kualitatif(df):
-    bullying_map = {"Tidak Pernah": 1, "Jarang": 2, "Kadang-kadang": 3, "Sering": 4, "Sangat Sering": 5}
-    sosial_map = {"Sangat Rendah": 1, "Rendah": 2, "Sedang": 3, "Tinggi": 4, "Sangat Tinggi": 5}
-    mental_map = {"Sangat Buruk": 1, "Buruk": 2, "Sedang": 3, "Baik": 4, "Sangat Baik": 5}
-    df["Tingkat Bullying"] = df["Tingkat Bullying"].map(bullying_map)
-    df["Dukungan Sosial"] = df["Dukungan Sosial"].map(sosial_map)
-    df["Kesehatan Mental"] = df["Kesehatan Mental"].map(mental_map)
-    return df
+# --- FUNGSI UNTUK KONVERSI KELAS ---
+def konversi_kelas(kelas):
+    kelas_map = {"V": 5, "VI": 6, "VII": 7, "VIII": 8, "IX": 9, "X": 10, "XI": 11, "XII": 12}
+    kelas_str = str(kelas).replace("||", "II").replace(" ", "").upper()
+    for key in kelas_map:
+        if key in kelas_str:
+            return kelas_map[key]
+    return 0
 
 # --- APLIKASI UTAMA ---
 st.title("📊 Aplikasi Prediksi Prestasi Belajar")
-mode = st.radio("Pilih mode input:", ("Input Manual", "Upload CSV", "Google Form"))
+mode = st.radio("Pilih mode input:", ("Input Manual", "Upload CSV"))
 
 if mode == "Input Manual":
     nama = st.text_input("Nama Siswa").strip()
@@ -99,105 +98,54 @@ if mode == "Input Manual":
             st.info("Data telah disimpan ke Database!")
 
 elif mode == "Upload CSV":
-    uploaded_file = st.file_uploader("Upload file CSV", type=["csv"], key="upload_csv")
+    uploaded_file = st.file_uploader("Upload file CSV (Hasil Google Form)", type=["csv"], key="upload_csv")
 
     if uploaded_file:
-        if "df_csv" not in st.session_state:
-            try:
-                df_temp = pd.read_csv(uploaded_file)
-                expected_cols = {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
-                                 "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"}
-
-                if not expected_cols.issubset(df_temp.columns):
-                    st.error("Format CSV tidak sesuai!")
-                else:
-                    st.session_state.df_csv = df_temp
-                    st.session_state.prediksi_dijalankan = False
-                    st.success("File berhasil diunggah! Klik tombol di bawah untuk memproses prediksi.")
-            except Exception as e:
-                st.error(f"Gagal membaca file CSV: {e}")
+        try:
+            df_form = pd.read_csv(uploaded_file)
+            kolom_harus_ada = ["Nama", "Jenis Kelamin", "Usia", "Kelas", 
+                "1. Saya pernah dibully di sekolah.",
+                "6. Keluarga saya selalu ada saat saya punya masalah.",
+                "11. Saya sering merasa cemas atau khawatir.",
+                "21. Pilih jenis bullying yang pernah anda alami."]
+            if not all(kol in df_form.columns for kol in kolom_harus_ada):
+                st.error("Format file tidak sesuai dengan hasil Google Form yang diharapkan.")
                 st.stop()
 
-    if "df_csv" in st.session_state:
-        st.dataframe(st.session_state.df_csv)
+            df_form = df_form.rename(columns={"Usia": "Umur"})
+            bullying_cols = df_form.columns[4:9]
+            sosial_cols = df_form.columns[9:14]
+            mental_cols = df_form.columns[14:19]
 
-        if st.button("Prediksi CSV"):
-            st.session_state.prediksi_dijalankan = True
-            st.rerun()
+            df_form["Tingkat Bullying"] = df_form[bullying_cols].mean(axis=1)
+            df_form["Dukungan Sosial"] = df_form[sosial_cols].mean(axis=1)
+            df_form["Kesehatan Mental"] = df_form[mental_cols].mean(axis=1)
 
-        if st.session_state.get("prediksi_dijalankan", False):
-            df_siswa = st.session_state.df_csv.copy()
-            df_siswa["Prediksi Prestasi"] = model.predict(
-                df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
-            )
-            df_siswa["Kategori"] = df_siswa["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
-
-            existing_data = sheet.get_all_values()
-            existing_len = len(existing_data)
-            existing_names = set(row[1] for row in existing_data[1:])
-
-            new_data = []
-            for _, row in df_siswa.iterrows():
-                if row["Nama"] in existing_names:
-                    continue
-                row_list = row[[ "Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
-                                 "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying",
-                                 "Prediksi Prestasi", "Kategori"]].tolist()
-                row_list.insert(0, existing_len)
-                row_list.append(row.get("Prestasi Belajar", ""))
-                sheet.append_row(row_list)
-                existing_len += 1
-                new_data.append(row)
-
-            if new_data:
-                st.success(f"{len(new_data)} baris data berhasil diproses dan disimpan ke Database!")
-                st.dataframe(pd.DataFrame(new_data))
-            else:
-                st.info("Tidak ada data baru yang ditambahkan. Semua siswa sudah ada di database.")
-
-            st.session_state.prediksi_dijalankan = False
-
-        if st.button("Reset Upload CSV"):
-            del st.session_state["df_csv"]
-            st.session_state.prediksi_dijalankan = False
-            st.rerun()
-
-elif mode == "Google Form":
-    st.info("🔄 Mengambil data dari hasil Google Form...")
-    try:
-        sheet_form = client.open("Hasil Google Form").sheet1
-        df_form = pd.DataFrame(sheet_form.get_all_records())
-        df_form = konversi_kualitatif(df_form)
-
-        if not {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
-                "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"}.issubset(df_form.columns):
-            st.error("Kolom dalam Google Form belum lengkap atau tidak sesuai.")
-        else:
-            st.success("Data berhasil diambil dari Google Form!")
-            df_form["Prediksi Prestasi"] = model.predict(
-                df_form[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
-            )
+            df_form["Kelas"] = df_form["Kelas"].apply(konversi_kelas)
+            df_form["Prediksi Prestasi"] = model.predict(df_form[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]])
             df_form["Kategori"] = df_form["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
 
             existing_data = sheet.get_all_values()
-            existing_len = len(existing_data)
             existing_names = set(row[1] for row in existing_data[1:])
+            new_data = []
+            no = len(existing_data)
 
-            added = 0
             for _, row in df_form.iterrows():
                 if row["Nama"] in existing_names:
                     continue
-                new_row = [existing_len, row["Nama"], row["Jenis Kelamin"], row["Umur"], row["Kelas"],
+                new_row = [no, row["Nama"], row["Jenis Kelamin"], row["Umur"], row["Kelas"],
                            row["Tingkat Bullying"], row["Dukungan Sosial"], row["Kesehatan Mental"],
-                           row["Jenis Bullying"], row["Prediksi Prestasi"], row["Kategori"], ""]
+                           row["21. Pilih jenis bullying yang pernah anda alami."],
+                           row["Prediksi Prestasi"], row["Kategori"], ""]
                 sheet.append_row(new_row)
-                existing_len += 1
-                added += 1
+                new_data.append(row)
+                no += 1
 
-            if added:
-                st.success(f"Berhasil menambahkan {added} data dari Google Form!")
-                st.dataframe(df_form)
-            else:
-                st.info("Tidak ada data baru dari Google Form.")
-    except Exception as e:
-        st.error(f"Gagal mengakses Google Form: {e}")
+            st.success(f"{len(new_data)} baris berhasil diproses dan disimpan!")
+            st.dataframe(pd.DataFrame(new_data))
+
+        except Exception as e:
+            st.error(f"Terjadi kesalahan saat memproses file: {e}")
+
+# --- Sisanya tetap sama seperti sebelumnya ---
+# --- Tampilkan riwayat, input nilai aktual, analisis, dan grafik ---
