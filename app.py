@@ -95,10 +95,13 @@ elif mode == "Upload CSV":
         df_siswa = pd.read_csv(uploaded_file)
         expected_cols = {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
                          "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"}
+
         if not expected_cols.issubset(df_siswa.columns):
             st.error("Format CSV tidak sesuai!")
         else:
-            st.dataframe(df_siswa)  # tampilkan isi CSV
+            st.success("File berhasil diunggah! Klik tombol di bawah untuk memproses prediksi.")
+            st.dataframe(df_siswa)
+
             if st.button("Prediksi CSV"):
                 df_siswa["Prediksi Prestasi"] = model.predict(
                     df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
@@ -107,7 +110,7 @@ elif mode == "Upload CSV":
 
                 existing_data = sheet.get_all_values()
                 existing_len = len(existing_data)
-                existing_names = set(row[1] for row in existing_data[1:])  # Kolom 'Nama'
+                existing_names = set(row[1] for row in existing_data[1:])
 
                 new_data = []
                 for _, row in df_siswa.iterrows():
