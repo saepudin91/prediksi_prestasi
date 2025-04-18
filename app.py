@@ -102,6 +102,7 @@ elif mode == "Upload CSV":
                     st.error("Format CSV tidak sesuai!")
                 else:
                     st.session_state.df_csv = df_temp
+                    st.session_state.prediksi_dijalankan = False
                     st.success("File berhasil diunggah! Klik tombol di bawah untuk memproses prediksi.")
             except Exception as e:
                 st.error(f"Gagal membaca file CSV: {e}")
@@ -111,6 +112,10 @@ elif mode == "Upload CSV":
         st.dataframe(st.session_state.df_csv)
 
         if st.button("Prediksi CSV"):
+            st.session_state.prediksi_dijalankan = True
+            st.rerun()
+
+        if st.session_state.get("prediksi_dijalankan", False):
             df_siswa = st.session_state.df_csv.copy()
             df_siswa["Prediksi Prestasi"] = model.predict(
                 df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
@@ -125,11 +130,9 @@ elif mode == "Upload CSV":
             for _, row in df_siswa.iterrows():
                 if row["Nama"] in existing_names:
                     continue
-                row_list = row[[
-                    "Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
-                    "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying",
-                    "Prediksi Prestasi", "Kategori"
-                ]].tolist()
+                row_list = row[[ "Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
+                                 "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying",
+                                 "Prediksi Prestasi", "Kategori"]].tolist()
                 row_list.insert(0, existing_len)
                 row_list.append(row.get("Prestasi Belajar", ""))
                 sheet.append_row(row_list)
@@ -142,8 +145,12 @@ elif mode == "Upload CSV":
             else:
                 st.info("Tidak ada data baru yang ditambahkan. Semua siswa sudah ada di database.")
 
+            st.session_state.prediksi_dijalankan = False
+
         if st.button("Reset Upload CSV"):
             del st.session_state["df_csv"]
+            st.session_state.prediksi_dijalankan = False
+            st.rerun()
 
 # --- RIWAYAT & INPUT NILAI AKTUAL ---
 st.subheader("📝 Riwayat Prediksi")
