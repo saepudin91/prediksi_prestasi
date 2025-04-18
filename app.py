@@ -91,8 +91,9 @@ if mode == "Input Manual":
 
 elif mode == "Upload CSV":
     uploaded_file = st.file_uploader("Upload file CSV", type=["csv"])
+    
     if uploaded_file is not None:
-        # Tampilkan data CSV yang diunggah
+        # Menampilkan file CSV setelah diunggah
         df_siswa = pd.read_csv(uploaded_file)
         expected_cols = {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
                          "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"}
@@ -101,11 +102,11 @@ elif mode == "Upload CSV":
             st.error("Format CSV tidak sesuai!")
         else:
             st.success("File berhasil diunggah! Klik tombol di bawah untuk memproses prediksi.")
-            st.dataframe(df_siswa)  # Menampilkan data yang diupload
+            st.dataframe(df_siswa)  # Menampilkan data CSV yang diunggah
 
-            # Hanya memproses prediksi jika tombol ini ditekan
+            # Tombol hanya muncul setelah file diunggah
             if st.button("Prediksi CSV"):
-                # Proses prediksi
+                # Proses prediksi setelah tombol ditekan
                 df_siswa["Prediksi Prestasi"] = model.predict(
                     df_siswa[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
                 )
