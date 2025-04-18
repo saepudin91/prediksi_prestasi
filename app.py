@@ -61,9 +61,19 @@ def klasifikasikan_prestasi(nilai):
     else:
         return "Tinggi"
 
+# --- KONVERSI KUALITATIF ---
+def konversi_kualitatif(df):
+    bullying_map = {"Tidak Pernah": 1, "Jarang": 2, "Kadang-kadang": 3, "Sering": 4, "Sangat Sering": 5}
+    sosial_map = {"Sangat Rendah": 1, "Rendah": 2, "Sedang": 3, "Tinggi": 4, "Sangat Tinggi": 5}
+    mental_map = {"Sangat Buruk": 1, "Buruk": 2, "Sedang": 3, "Baik": 4, "Sangat Baik": 5}
+    df["Tingkat Bullying"] = df["Tingkat Bullying"].map(bullying_map)
+    df["Dukungan Sosial"] = df["Dukungan Sosial"].map(sosial_map)
+    df["Kesehatan Mental"] = df["Kesehatan Mental"].map(mental_map)
+    return df
+
 # --- APLIKASI UTAMA ---
 st.title("📊 Aplikasi Prediksi Prestasi Belajar")
-mode = st.radio("Pilih mode input:", ("Input Manual", "Upload CSV"))
+mode = st.radio("Pilih mode input:", ("Input Manual", "Upload CSV", "Google Form"))
 
 if mode == "Input Manual":
     nama = st.text_input("Nama Siswa").strip()
@@ -152,75 +162,42 @@ elif mode == "Upload CSV":
             st.session_state.prediksi_dijalankan = False
             st.rerun()
 
-# --- RIWAYAT & INPUT NILAI AKTUAL ---
-st.subheader("📝 Riwayat Prediksi")
+elif mode == "Google Form":
+    st.info("🔄 Mengambil data dari hasil Google Form...")
+    try:
+        sheet_form = client.open("Hasil Google Form").sheet1
+        df_form = pd.DataFrame(sheet_form.get_all_records())
+        df_form = konversi_kualitatif(df_form)
 
-data = sheet.get_all_records()
-df_riwayat = pd.DataFrame(data)
+        if not {"Nama", "Jenis Kelamin", "Umur", "Kelas", "Tingkat Bullying",
+                "Dukungan Sosial", "Kesehatan Mental", "Jenis Bullying"}.issubset(df_form.columns):
+            st.error("Kolom dalam Google Form belum lengkap atau tidak sesuai.")
+        else:
+            st.success("Data berhasil diambil dari Google Form!")
+            df_form["Prediksi Prestasi"] = model.predict(
+                df_form[["Tingkat Bullying", "Dukungan Sosial", "Kesehatan Mental"]]
+            )
+            df_form["Kategori"] = df_form["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
 
-if not df_riwayat.empty:
-    st.dataframe(df_riwayat)
+            existing_data = sheet.get_all_values()
+            existing_len = len(existing_data)
+            existing_names = set(row[1] for row in existing_data[1:])
 
-    df_belum_dinilai = df_riwayat[df_riwayat["Prestasi Belajar"] == ""]
+            added = 0
+            for _, row in df_form.iterrows():
+                if row["Nama"] in existing_names:
+                    continue
+                new_row = [existing_len, row["Nama"], row["Jenis Kelamin"], row["Umur"], row["Kelas"],
+                           row["Tingkat Bullying"], row["Dukungan Sosial"], row["Kesehatan Mental"],
+                           row["Jenis Bullying"], row["Prediksi Prestasi"], row["Kategori"], ""]
+                sheet.append_row(new_row)
+                existing_len += 1
+                added += 1
 
-    if not df_belum_dinilai.empty:
-        st.subheader("✏️ Isi Nilai Aktual Prestasi Belajar")
-        selected_nama = st.selectbox("Pilih Nama", df_belum_dinilai["Nama"].unique())
-        nilai_aktual = st.slider("Nilai Aktual Prestasi Belajar (1–5)", 1, 5, 3)
-
-        if st.button("Simpan Nilai Aktual"):
-            for idx, row in enumerate(sheet.get_all_values()[1:], start=2):
-                if row[1] == selected_nama and row[11] == "":
-                    sheet.update_cell(idx, 12, str(nilai_aktual))
-                    st.success(f"Nilai aktual untuk {selected_nama} berhasil disimpan.")
-                    st.rerun()
-                    break
-    else:
-        st.info("Semua siswa sudah memiliki nilai aktual prestasi belajar.")
-else:
-    st.warning("Belum ada data prediksi yang tersimpan.")
-
-# --- ANALISIS BULLYING ---
-st.subheader("📊 Analisis Jenis Bullying")
-
-if not df_riwayat.empty:
-    bullying_counts = df_riwayat["Jenis Bullying"].value_counts()
-    fig, ax = plt.subplots(figsize=(8, 6))
-    bullying_counts.plot(kind="bar", ax=ax, color=['blue', 'red', 'green', 'purple', 'orange'])
-    ax.set_title("Jumlah Kasus Berdasarkan Jenis Bullying")
-    ax.set_xlabel("Jenis Bullying")
-    ax.set_ylabel("Jumlah Kasus")
-    st.pyplot(fig)
-
-    img_buffer = BytesIO()
-    fig.savefig(img_buffer, format="png", bbox_inches="tight")
-    img_buffer.seek(0)
-    st.download_button("📥 Download Grafik", data=img_buffer, file_name="grafik_bullying.png", mime="image/png")
-
-    st.write(f"📌 Jenis bullying yang paling banyak terjadi: {bullying_counts.idxmax()} ({bullying_counts.max()} kasus)")
-    st.write(f"📌 Jenis bullying yang paling sedikit terjadi: {bullying_counts.idxmin()} ({bullying_counts.min()} kasus)")
-else:
-    st.write("⚠ Tidak ada data bullying untuk dianalisis.")
-
-# --- PIE CHART KATEGORI PRESTASI ---
-st.subheader("📊 Distribusi Kategori Prediksi Prestasi Belajar")
-
-if not df_riwayat.empty:
-    df_riwayat["Prediksi Prestasi"] = pd.to_numeric(df_riwayat["Prediksi Prestasi"], errors="coerce")
-    df_valid = df_riwayat.dropna(subset=["Prediksi Prestasi"]).copy()
-    df_valid["Kategori"] = df_valid["Prediksi Prestasi"].apply(klasifikasikan_prestasi)
-    kategori_counts = df_valid["Kategori"].value_counts()
-
-    fig, ax = plt.subplots()
-    ax.pie(kategori_counts, labels=kategori_counts.index, autopct="%1.1f%%", startangle=90)
-    ax.set_title("Distribusi Kategori Prestasi")
-    ax.axis("equal")
-    st.pyplot(fig)
-
-    st.write("Jumlah per kategori:")
-    st.dataframe(kategori_counts.reset_index().rename(columns={"index": "Kategori", "Kategori": "Jumlah"}))
-
-    csv = df_riwayat.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Download Riwayat Prediksi", data=csv, file_name="riwayat_prediksi.csv", mime="text/csv")
-else:
-    st.info("⚠ Belum ada data prediksi yang valid untuk ditampilkan.")
+            if added:
+                st.success(f"Berhasil menambahkan {added} data dari Google Form!")
+                st.dataframe(df_form)
+            else:
+                st.info("Tidak ada data baru dari Google Form.")
+    except Exception as e:
+        st.error(f"Gagal mengakses Google Form: {e}")
