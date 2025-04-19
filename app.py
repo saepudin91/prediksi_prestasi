@@ -82,30 +82,51 @@ if st.button("Prediksi Prestasi"):
     sheet.append_row(new_row)
     st.info("Data berhasil disimpan ke Google Sheets.")
 
-# === UPLOAD FILE ===
+# === Upload File ===
 st.header("Upload CSV")
-uploaded_file = st.file_uploader("Upload file CSV (format: X1, X2, X3)", type=["csv"])
+uploaded_file = st.file_uploader("Upload file CSV (format: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3)", type=["csv"])
 
 if uploaded_file is not None:
     df_upload = pd.read_csv(uploaded_file)
 
-    if all(col in df_upload.columns for col in ["X1", "X2", "X3"]):
+    required_columns = ["Nama", "Jenis Kelamin", "Usia", "Kelas", "X1", "X2", "X3"]
+    if all(col in df_upload.columns for col in required_columns):
         df_upload["Prediksi_Y"] = model.predict(df_upload[["X1", "X2", "X3"]])
+
+        # Fungsi kategori
+        def kategori(y):
+            if y < 2.5:
+                return "Kurang"
+            elif y < 3.5:
+                return "Cukup"
+            elif y < 4.25:
+                return "Baik"
+            else:
+                return "Sangat Baik"
+
         df_upload["Kategori"] = df_upload["Prediksi_Y"].apply(kategori)
 
         st.subheader("Hasil Prediksi:")
         st.dataframe(df_upload)
 
-        # Tombol simpan ke Google Sheets
-        if st.button("Simpan Hasil ke Google Sheets"):
-            for _, row in df_upload.iterrows():
-                new_row = [
-                    len(sheet.get_all_values()), "-", "-", "-", "-",
-                    row["X1"], row["X2"], row["X3"], "Upload CSV",
-                    row["Prediksi_Y"], row["Kategori"]
-                ]
-                sheet.append_row(new_row)
-            st.success("Data dari file berhasil disimpan ke Google Sheets.")
+        # Simpan ke Google Sheets
+        for idx, row in df_upload.iterrows():
+            new_row = [
+                len(sheet.get_all_values()),  # No
+                row["Nama"],
+                row["Jenis Kelamin"],
+                row["Usia"],
+                row["Kelas"],
+                row["X1"],
+                row["X2"],
+                row["X3"],
+                "N/A",  # Jenis Bullying
+                row["Prediksi_Y"],
+                row["Kategori"],
+                ""  # Prestasi Belajar aktual (jika belum ada)
+            ]
+            sheet.append_row(new_row)
+        st.success("Semua data dari CSV berhasil diprediksi dan disimpan ke Google Sheets!")
 
         # === VISUALISASI ===
         st.subheader("Visualisasi Korelasi Variabel")
