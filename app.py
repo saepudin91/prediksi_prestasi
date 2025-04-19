@@ -128,13 +128,14 @@ if uploaded_file is not None:
             sheet.append_row(new_row)
         st.success("Semua data dari CSV berhasil diprediksi dan disimpan ke Google Sheets!")
 
-        # === VISUALISASI ===
+        # Visualisasi Korelasi
         st.subheader("Visualisasi Korelasi Variabel")
         fig, ax = plt.subplots(figsize=(6, 4))
         sns.heatmap(df_upload[["X1", "X2", "X3", "Prediksi_Y"]].corr(), annot=True, cmap="coolwarm", ax=ax)
         st.pyplot(fig)
 
-        st.subheader("Plot X vs Y")
+        # Plot X vs Y
+        st.subheader("Plot X vs Prediksi")
         for x_col in ["X1", "X2", "X3"]:
             fig, ax = plt.subplots()
             sns.scatterplot(x=df_upload[x_col], y=df_upload["Prediksi_Y"], ax=ax)
@@ -142,5 +143,6 @@ if uploaded_file is not None:
             ax.set_xlabel(x_col)
             ax.set_ylabel("Prediksi Prestasi")
             st.pyplot(fig)
+
     else:
-        st.error("Kolom harus mengandung X1, X2, dan X3.")
+        st.error("CSV harus memiliki kolom: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3")
