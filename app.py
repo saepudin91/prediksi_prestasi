@@ -120,10 +120,9 @@ if uploaded_file is not None:
                 row["X1"],
                 row["X2"],
                 row["X3"],
-                "N/A",  # Jenis Bullying
+                "Upload",  # Sumber data
                 row["Prediksi_Y"],
-                row["Kategori"],
-                ""  # Prestasi Belajar aktual (jika belum ada)
+                row["Kategori"]
             ]
             sheet.append_row(new_row)
         st.success("Semua data dari CSV berhasil diprediksi dan disimpan ke Google Sheets!")
@@ -134,15 +133,14 @@ if uploaded_file is not None:
         sns.heatmap(df_upload[["X1", "X2", "X3", "Prediksi_Y"]].corr(), annot=True, cmap="coolwarm", ax=ax)
         st.pyplot(fig)
 
-        # Plot X vs Prediksi
-st.subheader("Plot X vs Prediksi")
-for x_col in ["X1", "X2", "X3"]:
-    fig, ax = plt.subplots()
-    sns.regplot(x=df_upload[x_col], y=df_upload["Prediksi_Y"], ax=ax, line_kws={"color": "red"})
-    ax.set_title(f"{x_col} vs Prediksi Prestasi")
-    ax.set_xlabel(x_col)
-    ax.set_ylabel("Prediksi Prestasi")
-    st.pyplot(fig)
-else:
+        # Plot X vs Prediksi (dengan garis regresi)
+        st.subheader("Plot X vs Prediksi")
+        for x_col in ["X1", "X2", "X3"]:
+            fig, ax = plt.subplots()
+            sns.regplot(x=df_upload[x_col], y=df_upload["Prediksi_Y"], ax=ax, line_kws={"color": "red"})
+            ax.set_title(f"{x_col} vs Prediksi Prestasi")
+            ax.set_xlabel(x_col)
+            ax.set_ylabel("Prediksi Prestasi")
+            st.pyplot(fig)
+    else:
         st.error("CSV harus memiliki kolom: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3")
-    
