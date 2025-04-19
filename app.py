@@ -134,15 +134,15 @@ if uploaded_file is not None:
         sns.heatmap(df_upload[["X1", "X2", "X3", "Prediksi_Y"]].corr(), annot=True, cmap="coolwarm", ax=ax)
         st.pyplot(fig)
 
-        # Plot X vs Y
-        st.subheader("Plot X vs Prediksi")
-        for x_col in ["X1", "X2", "X3"]:
-            fig, ax = plt.subplots()
-            sns.scatterplot(x=df_upload[x_col], y=df_upload["Prediksi_Y"], ax=ax)
-            ax.set_title(f"{x_col} vs Prediksi Prestasi")
-            ax.set_xlabel(x_col)
-            ax.set_ylabel("Prediksi Prestasi")
-            st.pyplot(fig)
+        # Plot X vs Prediksi
+st.subheader("Plot X vs Prediksi")
+for x_col in ["X1", "X2", "X3"]:
+    fig, ax = plt.subplots()
+    sns.regplot(x=df_upload[x_col], y=df_upload["Prediksi_Y"], ax=ax, line_kws={"color": "red"})
+    ax.set_title(f"{x_col} vs Prediksi Prestasi")
+    ax.set_xlabel(x_col)
+    ax.set_ylabel("Prediksi Prestasi")
+    st.pyplot(fig)
 
     else:
         st.error("CSV harus memiliki kolom: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3")
