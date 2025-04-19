@@ -112,7 +112,7 @@ if uploaded_file is not None:
         # Simpan ke Google Sheets
         for idx, row in df_upload.iterrows():
             new_row = [
-                len(sheet.get_all_values()),  # No
+                len(sheet.get_all_values()),
                 row["Nama"],
                 row["Jenis Kelamin"],
                 row["Usia"],
@@ -120,23 +120,21 @@ if uploaded_file is not None:
                 row["X1"],
                 row["X2"],
                 row["X3"],
-                "N/A",  # Sumber
+                "CSV",
                 row["Prediksi_Y"],
-                row["Kategori"],
+                row["Kategori"]
             ]
             sheet.append_row(new_row)
-
         st.success("Semua data dari CSV berhasil diprediksi dan disimpan ke Google Sheets!")
 
-        # Visualisasi Korelasi
+        # === Visualisasi Korelasi (Heatmap) ===
         st.subheader("Visualisasi Korelasi Variabel")
         fig, ax = plt.subplots(figsize=(6, 4))
         sns.heatmap(df_upload[["X1", "X2", "X3", "Prediksi_Y"]].corr(), annot=True, cmap="coolwarm", ax=ax)
         st.pyplot(fig)
 
-        # Plot X vs Prediksi
+        # === Plot X vs Prediksi ===
         st.subheader("Plot X vs Prediksi")
-
         for x_col in ["X1", "X2", "X3"]:
             fig, ax = plt.subplots()
             sns.regplot(
@@ -152,13 +150,12 @@ if uploaded_file is not None:
             ax.grid(True)
             st.pyplot(fig)
 
-        # Keterangan visualisasi
+        # === Keterangan Visual ===
         st.markdown("""
-        *Keterangan:*
-        - *Titik biru* = Data siswa dari file CSV.
-        - *Garis merah* = Garis regresi linier, menunjukkan hubungan antara variabel tersebut dan prediksi prestasi.
-        - Garis ini membantu melihat tren umum, apakah X1/X2/X3 punya pengaruh positif/negatif.
+        *Keterangan Visualisasi:*
+        - *Titik biru* adalah data hasil input siswa dari CSV.
+        - *Garis merah* adalah *garis tren regresi linier*.
+        - *Semakin dekat titik ke garis*, semakin sesuai dengan prediksi model.
         """)
-
     else:
         st.error("CSV harus memiliki kolom: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3")
