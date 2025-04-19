@@ -120,27 +120,48 @@ if uploaded_file is not None:
                 row["X1"],
                 row["X2"],
                 row["X3"],
-                "Upload",  # Sumber data
+                "Upload",
                 row["Prediksi_Y"],
                 row["Kategori"]
             ]
             sheet.append_row(new_row)
         st.success("Semua data dari CSV berhasil diprediksi dan disimpan ke Google Sheets!")
 
-        # Visualisasi Korelasi
-        st.subheader("Visualisasi Korelasi Variabel")
-        fig, ax = plt.subplots(figsize=(6, 4))
-        sns.heatmap(df_upload[["X1", "X2", "X3", "Prediksi_Y"]].corr(), annot=True, cmap="coolwarm", ax=ax)
-        st.pyplot(fig)
+        # === Visualisasi Korelasi dengan Plotly ===
+        import plotly.express as px
+        import plotly.graph_objects as go
 
-        # Plot X vs Prediksi (dengan garis regresi)
-        st.subheader("Plot X vs Prediksi")
+        st.subheader("Visualisasi Korelasi Variabel")
+        corr = df_upload[["X1", "X2", "X3", "Prediksi_Y"]].corr()
+
+        fig_corr = px.imshow(
+            corr,
+            text_auto=True,
+            color_continuous_scale="RdBu",
+            title="Matriks Korelasi (Merah: Negatif, Biru: Positif)"
+        )
+        st.plotly_chart(fig_corr)
+
+        # === Plot X vs Y ===
+        st.subheader("Plot Variabel X terhadap Prediksi Prestasi")
         for x_col in ["X1", "X2", "X3"]:
-            fig, ax = plt.subplots()
-            sns.regplot(x=df_upload[x_col], y=df_upload["Prediksi_Y"], ax=ax, line_kws={"color": "red"})
-            ax.set_title(f"{x_col} vs Prediksi Prestasi")
-            ax.set_xlabel(x_col)
-            ax.set_ylabel("Prediksi Prestasi")
-            st.pyplot(fig)
+            fig = px.scatter(
+                df_upload,
+                x=x_col,
+                y="Prediksi_Y",
+                trendline="ols",
+                color="Kategori",
+                title=f"{x_col} vs Prediksi Prestasi",
+                labels={x_col: x_col, "Prediksi_Y": "Prediksi Prestasi"}
+            )
+            fig.update_layout(
+                legend_title="Kategori",
+                xaxis_title=x_col,
+                yaxis_title="Prediksi Prestasi"
+            )
+            st.plotly_chart(fig)
+
+        st.info("Warna titik menunjukkan kategori, garis menunjukkan tren prediksi.")
+
     else:
         st.error("CSV harus memiliki kolom: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3")
