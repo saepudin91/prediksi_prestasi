@@ -144,5 +144,4 @@ for x_col in ["X1", "X2", "X3"]:
     ax.set_ylabel("Prediksi Prestasi")
     st.pyplot(fig)
 
-    else:
-        st.error("CSV harus memiliki kolom: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3")
+    
