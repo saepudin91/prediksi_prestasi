@@ -17,10 +17,9 @@ client = gspread.authorize(creds)
 SPREADSHEET_NAME = "Prediksi prestasi"
 sheet = client.open(SPREADSHEET_NAME).sheet1
 
-# Header otomatis sesuai versi 2
+# Header otomatis
 HEADER = ["No", "Nama", "Jenis Kelamin", "Usia", "Kelas", 
           "X1", "X2", "X3", "Sumber", "Prediksi Prestasi", "Kategori"]
-
 if sheet.row_values(1) != HEADER:
     sheet.clear()
     sheet.append_row(HEADER)
@@ -28,6 +27,17 @@ if sheet.row_values(1) != HEADER:
 # === LOAD MODEL ===
 with open("model_prestasi.pkl", "rb") as f:
     model = pickle.load(f)
+
+# === FUNGSI KATEGORI ===
+def kategori(y):
+    if y < 2.5:
+        return "Kurang"
+    elif y < 3.5:
+        return "Cukup"
+    elif y < 4.25:
+        return "Baik"
+    else:
+        return "Sangat Baik"
 
 # === JUDUL APLIKASI ===
 st.title("Prediksi Pengaruh Bullying Terhadap Prestasi Belajar Siswa")
@@ -44,16 +54,6 @@ x1 = st.slider("Pengalaman Bullying (X1)", 1.0, 5.0, 3.0)
 x2 = st.slider("Dukungan Sosial (X2)", 1.0, 5.0, 3.0)
 x3 = st.slider("Kesehatan Mental (X3)", 1.0, 5.0, 3.0)
 
-def kategori(y):
-    if y < 2.5:
-        return "Kurang"
-    elif y < 3.5:
-        return "Cukup"
-    elif y < 4.25:
-        return "Baik"
-    else:
-        return "Sangat Baik"
-
 if st.button("Prediksi Prestasi"):
     input_data = pd.DataFrame({"X1": [x1], "X2": [x2], "X3": [x3]})
     prediction = model.predict(input_data)[0]
@@ -61,8 +61,9 @@ if st.button("Prediksi Prestasi"):
 
     st.success(f"Prediksi Prestasi Belajar: {prediction:.2f} ({kategori_hasil})")
 
-    st.write("Data Input:")
-    st.write({
+    # Tampilkan dalam bentuk tabel
+    st.subheader("Hasil Prediksi (Manual)")
+    df_hasil_manual = pd.DataFrame([{
         "Nama": nama,
         "Jenis Kelamin": jenis_kelamin,
         "Usia": usia,
@@ -70,9 +71,10 @@ if st.button("Prediksi Prestasi"):
         "X1": x1,
         "X2": x2,
         "X3": x3,
-        "Prediksi Prestasi": prediction,
+        "Prediksi Prestasi": round(prediction, 2),
         "Kategori": kategori_hasil
-    })
+    }])
+    st.dataframe(df_hasil_manual)
 
     # Simpan ke Google Sheets
     new_row = [
@@ -82,7 +84,7 @@ if st.button("Prediksi Prestasi"):
     sheet.append_row(new_row)
     st.info("Data berhasil disimpan ke Google Sheets.")
 
-# === Upload File ===
+# === UPLOAD FILE CSV ===
 st.header("Upload CSV")
 uploaded_file = st.file_uploader("Upload file CSV (format: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3)", type=["csv"])
 
@@ -92,21 +94,9 @@ if uploaded_file is not None:
     required_columns = ["Nama", "Jenis Kelamin", "Usia", "Kelas", "X1", "X2", "X3"]
     if all(col in df_upload.columns for col in required_columns):
         df_upload["Prediksi_Y"] = model.predict(df_upload[["X1", "X2", "X3"]])
-
-        # Fungsi kategori
-        def kategori(y):
-            if y < 2.5:
-                return "Kurang"
-            elif y < 3.5:
-                return "Cukup"
-            elif y < 4.25:
-                return "Baik"
-            else:
-                return "Sangat Baik"
-
         df_upload["Kategori"] = df_upload["Prediksi_Y"].apply(kategori)
 
-        st.subheader("Hasil Prediksi:")
+        st.subheader("Hasil Prediksi dari CSV")
         st.dataframe(df_upload)
 
         # Simpan ke Google Sheets
@@ -127,13 +117,13 @@ if uploaded_file is not None:
             sheet.append_row(new_row)
         st.success("Semua data dari CSV berhasil diprediksi dan disimpan ke Google Sheets!")
 
-        # === Visualisasi Korelasi (Heatmap) ===
+        # Visualisasi Korelasi
         st.subheader("Visualisasi Korelasi Variabel")
         fig, ax = plt.subplots(figsize=(6, 4))
         sns.heatmap(df_upload[["X1", "X2", "X3", "Prediksi_Y"]].corr(), annot=True, cmap="coolwarm", ax=ax)
         st.pyplot(fig)
 
-        # === Plot X vs Prediksi ===
+        # Plot masing-masing X terhadap Prediksi
         st.subheader("Plot X vs Prediksi")
         for x_col in ["X1", "X2", "X3"]:
             fig, ax = plt.subplots()
@@ -150,12 +140,11 @@ if uploaded_file is not None:
             ax.grid(True)
             st.pyplot(fig)
 
-        # === Keterangan Visual ===
         st.markdown("""
         *Keterangan Visualisasi:*
-        - *Titik biru* adalah data hasil input siswa dari CSV.
-        - *Garis merah* adalah *garis tren regresi linier*.
-        - *Semakin dekat titik ke garis*, semakin sesuai dengan prediksi model.
+        - Titik biru adalah data hasil input siswa dari CSV.
+        - Garis merah adalah garis tren regresi linier.
+        - Semakin dekat titik ke garis, semakin sesuai dengan prediksi model.
         """)
     else:
         st.error("CSV harus memiliki kolom: Nama, Jenis Kelamin, Usia, Kelas, X1, X2, X3")
