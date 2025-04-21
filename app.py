@@ -74,7 +74,11 @@ if st.button("Prediksi Prestasi"):
     df_input = pd.DataFrame([{
         "X1": x1,
         "X2": x2,
-        "X3": x3
+        "X3": x3,
+        "Verbal": verbal,
+        "Fisik": fisik,
+        "Sosial": sosial,
+        "Cyber": cyber
     }])
     prediction = model.predict(get_model_input(df_input))[0]
     kategori_hasil = kategori(prediction)
