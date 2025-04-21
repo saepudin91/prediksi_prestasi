@@ -148,7 +148,7 @@ if uploaded_file is not None:
             st.pyplot(fig)
 
         st.markdown("""
-        *Keterangan Visualisasi:*
+        Keterangan Visualisasi:
         - Titik biru adalah data hasil input siswa dari CSV.
         - Garis merah adalah garis tren regresi linier.
         """)
