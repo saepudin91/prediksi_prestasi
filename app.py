@@ -13,7 +13,6 @@ creds = Credentials.from_service_account_info(secrets, scopes=[
     "https://www.googleapis.com/auth/drive"
 ])
 client = gspread.authorize(creds)
-
 SPREADSHEET_NAME = "Prediksi prestasi"
 sheet = client.open(SPREADSHEET_NAME).sheet1
 
@@ -39,6 +38,10 @@ def kategori(y):
     else:
         return "Sangat Baik"
 
+# === FUNGSI AMBIL FITUR YANG DIPAKAI MODEL ===
+def get_model_input(df):
+    return df[["X1", "X2", "X3"]]
+
 # === JUDUL APLIKASI ===
 st.title("Prediksi Pengaruh Bullying Terhadap Prestasi Belajar Siswa")
 
@@ -61,13 +64,14 @@ sosial = st.slider("Bullying Sosial", 1.0, 5.0, 3.0)
 cyber = st.slider("Bullying Cyber", 1.0, 5.0, 3.0)
 
 if st.button("Prediksi Prestasi"):
-    input_data = pd.DataFrame({"X1": [x1], "X2": [x2], "X3": [x3]})
-    prediction = model.predict(input_data)[0]
+    df_input = pd.DataFrame([{
+        "X1": x1, "X2": x2, "X3": x3
+    }])
+    prediction = model.predict(df_input)[0]
     kategori_hasil = kategori(prediction)
 
     st.success(f"Prediksi Prestasi Belajar: {prediction:.2f} ({kategori_hasil})")
 
-    # Tampilkan dalam bentuk tabel
     df_hasil_manual = pd.DataFrame([{
         "Nama": nama,
         "Jenis Kelamin": jenis_kelamin,
@@ -85,7 +89,6 @@ if st.button("Prediksi Prestasi"):
     }])
     st.dataframe(df_hasil_manual)
 
-    # Simpan ke Google Sheets
     new_row = [
         len(sheet.get_all_values()), nama, jenis_kelamin, usia, kelas,
         x1, x2, x3, verbal, fisik, sosial, cyber, "Manual", prediction, kategori_hasil
@@ -99,38 +102,26 @@ uploaded_file = st.file_uploader("Upload file CSV (wajib: Nama, Jenis Kelamin, U
 
 if uploaded_file is not None:
     df_upload = pd.read_csv(uploaded_file)
-
     required_columns = ["Nama", "Jenis Kelamin", "Usia", "Kelas", "X1", "X2", "X3", "Verbal", "Fisik", "Sosial", "Cyber"]
+
     if all(col in df_upload.columns for col in required_columns):
-        df_upload["Prediksi_Y"] = model.predict(df_upload[["X1", "X2", "X3"]])
+        df_upload["Prediksi_Y"] = model.predict(get_model_input(df_upload))
         df_upload["Kategori"] = df_upload["Prediksi_Y"].apply(kategori)
 
         st.subheader("Hasil Prediksi dari CSV")
         st.dataframe(df_upload)
 
-        # Simpan ke Google Sheets
         for idx, row in df_upload.iterrows():
             new_row = [
                 len(sheet.get_all_values()),
-                row["Nama"],
-                row["Jenis Kelamin"],
-                row["Usia"],
-                row["Kelas"],
-                row["X1"],
-                row["X2"],
-                row["X3"],
-                row["Verbal"],
-                row["Fisik"],
-                row["Sosial"],
-                row["Cyber"],
-                "CSV",
-                row["Prediksi_Y"],
-                row["Kategori"]
+                row["Nama"], row["Jenis Kelamin"], row["Usia"], row["Kelas"],
+                row["X1"], row["X2"], row["X3"],
+                row["Verbal"], row["Fisik"], row["Sosial"], row["Cyber"],
+                "CSV", row["Prediksi_Y"], row["Kategori"]
             ]
             sheet.append_row(new_row)
         st.success("Semua data dari CSV berhasil diprediksi dan disimpan ke Google Sheets!")
 
-        # Visualisasi Korelasi
         st.subheader("Visualisasi Korelasi Variabel")
         fig, ax = plt.subplots(figsize=(6, 4))
         sns.heatmap(df_upload[["X1", "X2", "X3", "Prediksi_Y"]].corr(), annot=True, cmap="coolwarm", ax=ax)
