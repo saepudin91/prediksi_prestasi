@@ -41,7 +41,13 @@ def kategori(y):
 
 # === FUNGSI EKSTRAK FITUR UNTUK MODEL ===
 def get_model_input(df):
-    return df[["X1", "X2", "X3"]]
+    df = df.rename(columns={
+        "Verbal": "Bullying_Verbal",
+        "Fisik": "Bullying_Fisik",
+        "Sosial": "Bullying_Sosial",
+        "Cyber": "Bullying_Cyber"
+    })
+    return df[["X1", "X2", "X3", "Bullying_Verbal", "Bullying_Fisik", "Bullying_Sosial", "Bullying_Cyber"]]
 
 # === JUDUL APLIKASI ===
 st.title("Prediksi Pengaruh Bullying Terhadap Prestasi Belajar Siswa")
